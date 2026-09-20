@@ -195,7 +195,7 @@ button.side:hover{border-color:var(--go)}
 button.side:active{transform:scale(.94)}
 button.side.on{background:var(--go); border-color:var(--go); color:var(--go-ink)}
 button.side.on small{color:var(--go-ink)}
-.injline{color:var(--muted); font-size:11.5px; margin-top:2px}
+.injline{display:block; color:var(--muted); font-size:11.5px; margin-top:2px}
 .injline b{color:#C74545; font-weight:600}
 .injline i{color:#D9A93C; font-style:normal; font-weight:600}
 .itag{
@@ -565,6 +565,20 @@ if (D.scores && D.scores.length){
   }).join("");
 }
 
+function wxLine(g){
+  const w = g.wx;
+  if (!w) return "";
+  if (w.roof === "dome") return `<span class="injline">dome</span>`;
+  if (w.temp === undefined)
+    return w.roof === "retract" ? `<span class="injline">retractable roof</span>` : "";
+  const wind = w.wind >= 20 ? `<b>wind ${w.wind} (g${w.gust})</b>`
+    : w.wind >= 15 ? `<i>wind ${w.wind}</i>` : `wind ${w.wind}`;
+  const rain = w.pop >= 50 ? ` · <i>rain ${w.pop}%</i>`
+    : w.pop >= 25 ? ` · rain ${w.pop}%` : "";
+  const roof = w.roof === "retract" ? " · retract" : "";
+  return `<span class="injline">${w.temp}°F · ${wind}${rain}${roof}</span>`;
+}
+
 function injLine(g){
   if (!g.inj) return "";
   const bits = [];
@@ -583,7 +597,7 @@ $("slate").innerHTML = D.games.map(g => {
   const btn = s => `<button class="side" data-k="${g.market}:${s.sel}">
       ${s.team} ${fd(s.odds)}<small>${pct(s.p)}</small></button>`;
   return `<li style="--tc:${TEAMCOLOR[fav.team] || "var(--edge)"}"><span class="tab"></span>
-    <span><span class="m">${g.matchup}</span><br><span class="t">${kick(g.start)}</span>${injLine(g)}</span>
+    <span><span class="m">${g.matchup}</span><br><span class="t">${kick(g.start)}</span>${wxLine(g)}${injLine(g)}</span>
     <span class="sides">${btn(g.sides[0])}${btn(g.sides[1])}</span></li>`;
 }).join("");
 

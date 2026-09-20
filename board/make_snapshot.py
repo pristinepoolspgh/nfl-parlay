@@ -32,6 +32,70 @@ INJ_URL = ("https://site.api.espn.com/apis/site/v2/sports/football/nfl/"
            "injuries")
 POS_RANK = {"QB": 0, "RB": 1, "WR": 2, "TE": 3}
 
+WX_URL = ("https://api.open-meteo.com/v1/forecast?latitude={lat}"
+          "&longitude={lon}&hourly=temperature_2m,precipitation_probability,"
+          "wind_speed_10m,wind_gusts_10m&temperature_unit=fahrenheit"
+          "&wind_speed_unit=mph&timezone=America%2FNew_York&forecast_days=3")
+
+# Home stadium per team: (lat, lon, roof). Weather only matters outdoors;
+# retractables usually close in bad weather but the forecast still informs.
+STADIUMS = {
+    "ARI": (33.5276, -112.2626, "retract"),
+    "ATL": (33.7554, -84.4010, "retract"),
+    "BAL": (39.2780, -76.6227, "open"),
+    "BUF": (42.7738, -78.7870, "open"),
+    "CAR": (35.2258, -80.8528, "open"),
+    "CHI": (41.8623, -87.6167, "open"),
+    "CIN": (39.0955, -84.5161, "open"),
+    "CLE": (41.5061, -81.6995, "open"),
+    "DAL": (32.7473, -97.0945, "retract"),
+    "DEN": (39.7439, -105.0201, "open"),
+    "DET": (42.3400, -83.0456, "dome"),
+    "GB": (44.5013, -88.0622, "open"),
+    "HOU": (29.6847, -95.4107, "retract"),
+    "IND": (39.7601, -86.1639, "retract"),
+    "JAX": (30.3239, -81.6373, "open"),
+    "KC": (39.0489, -94.4839, "open"),
+    "LAC": (33.9535, -118.3392, "dome"),
+    "LAR": (33.9535, -118.3392, "dome"),
+    "LV": (36.0909, -115.1833, "dome"),
+    "MIA": (25.9580, -80.2389, "open"),
+    "MIN": (44.9736, -93.2575, "dome"),
+    "NE": (42.0909, -71.2643, "open"),
+    "NO": (29.9511, -90.0812, "dome"),
+    "NYG": (40.8135, -74.0745, "open"),
+    "NYJ": (40.8135, -74.0745, "open"),
+    "PHI": (39.9008, -75.1675, "open"),
+    "PIT": (40.4468, -80.0158, "open"),
+    "SEA": (47.5952, -122.3316, "open"),
+    "SF": (37.4030, -121.9700, "open"),
+    "TB": (27.9759, -82.5033, "open"),
+    "TEN": (36.1665, -86.7713, "open"),
+    "WSH": (38.9078, -76.8645, "open"),
+}
+
+
+def fetch_weather(home_team, start_et):
+    """Kickoff-hour forecast at the home stadium (times are ET)."""
+    stad = STADIUMS.get(home_team)
+    if not stad:
+        return None
+    lat, lon, roof = stad
+    if roof == "dome":
+        return {"roof": "dome"}
+    try:
+        d = curl_json(WX_URL.format(lat=lat, lon=lon))
+        h = d["hourly"]
+        want = start_et[:13].replace(" ", "T") + ":00"
+        i = h["time"].index(want)
+        return {"roof": roof,
+                "temp": round(h["temperature_2m"][i]),
+                "wind": round(h["wind_speed_10m"][i]),
+                "gust": round(h["wind_gusts_10m"][i]),
+                "pop": h["precipitation_probability"][i]}
+    except Exception:
+        return {"roof": roof}
+
 
 def _norm_name(n):
     toks = [t for t in n.lower().replace(".", "").split()
@@ -157,6 +221,9 @@ def build_snapshot():
         away, home = g["matchup"].split(" @ ")
         g["inj"] = {t: inj_by_team.get(t, [])[:4] for t in (away, home)
                     if inj_by_team.get(t)}
+        wx = fetch_weather(home, g["start"])
+        if wx:
+            g["wx"] = wx
     for c in props:
         st = status_by_name.get(_norm_name(c["player"]))
         if st:
