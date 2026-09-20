@@ -16,14 +16,15 @@ python3 nfl_parlay.py parlay --legs 3        # best 3-leg parlay
 python3 nfl_parlay.py parlay --target 0.90   # aim for 90% combined
 python3 nfl_parlay.py parlay --stake 25      # payout math on $25
 python3 nfl_parlay.py parlay --props 2       # swap 2 legs for player props
-python3 nfl_parlay.py props DEN              # player prop lines for a game
+python3 nfl_parlay.py props DEN              # player props with prices
+python3 nfl_parlay.py props DEN --alts       # include alternate lines
 python3 nfl_parlay.py props DEN --type rush  # just rushing props
 python3 nfl_parlay.py slate --demo           # offline sample data
 python3 nfl_parlay.py slate --date 20260927  # a specific Sunday (YYYYMMDD)
 ```
 
-Live mode needs internet access to `site.api.espn.com` and
-`sports.core.api.espn.com`; `--demo` runs anywhere on a bundled sample slate.
+Live mode needs internet access to `site.api.espn.com` (game lines) and
+`www.bovada.lv` (prop prices); `--demo` runs anywhere on bundled sample data.
 
 ## What the numbers mean
 
@@ -38,16 +39,21 @@ Live mode needs internet access to `site.api.espn.com` and
 
 ## Player props
 
-`props <TEAM>` lists the player prop lines for that team's next game —
-passing/rushing/receiving yards and receptions by default, `--type
-pass|rush|rec|td|all` for more. `parlay --props N` swaps N moneyline legs
-for prop legs in the ticket math.
+`props <TEAM>` lists player props for that team's next game with real
+prices from Bovada's public JSON — both sides of every line, de-vigged into
+probabilities that sum to 100%. Defaults to the core full-game
+yardage/receptions markets at the main line; `--alts` shows every alternate
+line, `--type pass|rush|rec|td|all` filters, `--limit` caps the count.
 
-An honesty note: ESPN publishes prop **lines** but not prices. A prop at the
-market line is roughly a 50/50 whichever side you take (books charge about
--110 a side), so prop legs are counted at 50% and the side is yours to pick.
-Each prop leg roughly halves a ticket's hit probability and doubles its fair
-payout. This tool won't invent an edge it doesn't have — if you want props
-priced sharper than a coin flip, that takes a real odds feed, not ESPN's.
+`parlay --props N` swaps N moneyline legs for the safest priced prop sides
+on the whole board (alternate lines included, at most one leg per player).
+Two honest caveats: the math treats legs as independent, but books price
+same-game combos (SGPs) differently and may bar some combinations; and if
+Bovada is unreachable the tool falls back to ESPN, which publishes only
+lines — a prop at the market line is ~50/50 either side, and the output
+says so rather than inventing an edge.
+
+Bovada's endpoints are public but unofficial, so they can change without
+notice; `--source espn` forces the fallback if they do.
 
 Estimates, not guarantees. Nothing here is betting advice.

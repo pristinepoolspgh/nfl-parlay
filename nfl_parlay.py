@@ -15,7 +15,8 @@ USAGE
   python3 nfl_parlay.py parlay --target 0.90   # aim for 90% combined
   python3 nfl_parlay.py parlay --stake 25      # payout math on $25
   python3 nfl_parlay.py parlay --props 2       # swap 2 legs for player props
-  python3 nfl_parlay.py props DEN              # player prop lines for a game
+  python3 nfl_parlay.py props DEN              # player props with prices
+  python3 nfl_parlay.py props DEN --alts       # include alternate lines
   python3 nfl_parlay.py props DEN --type rec   # just the receiving props
   python3 nfl_parlay.py slate --demo           # offline sample data
   python3 nfl_parlay.py slate --date 20260927  # a specific Sunday (YYYYMMDD)
@@ -23,14 +24,18 @@ USAGE
 No API key needed. Live mode requires internet; --demo runs anywhere.
 Probabilities are model/market estimates, not guarantees.
 
-A note on props: ESPN publishes prop LINES but not prices. A prop at the
-market line is roughly a coin flip whichever side you take (books charge
-about -110 a side), so prop legs are priced at 50% here and the side is
-yours to pick. This tool won't invent an edge it doesn't have.
+DATA SOURCES
+  Game moneylines come from ESPN's public scoreboard API. Player prop
+  PRICES come from Bovada's public JSON (both sides of every line,
+  alternates included), de-vigged the same way as the moneylines. If
+  Bovada is unreachable, props fall back to ESPN, which publishes only
+  the lines — a prop at the market line is ~50/50 either side, and the
+  tool says so rather than inventing an edge.
 """
 
 import argparse
 import json
+import re
 import sys
 import urllib.request
 from datetime import datetime
@@ -47,6 +52,24 @@ ESPN_URL = ("https://site.api.espn.com/apis/site/v2/sports/football/nfl/"
 PROPS_URL = ("https://sports.core.api.espn.com/v2/sports/football/leagues/"
              "nfl/events/{eid}/competitions/{eid}/odds/100/propBets"
              "?limit=300&page={page}")
+BOVADA_COUPON = ("https://www.bovada.lv/services/sports/event/coupon/events/"
+                 "A/description/football/nfl"
+                 "?marketFilterId=def&preMatchOnly=true&lang=en")
+BOVADA_EVENT = ("https://www.bovada.lv/services/sports/event/v2/events/"
+                "A/description{link}?lang=en")
+
+# ESPN-style abbreviations -> nicknames, for matching Bovada event names.
+TEAM_NICKNAMES = {
+    "ARI": "Cardinals", "ATL": "Falcons", "BAL": "Ravens", "BUF": "Bills",
+    "CAR": "Panthers", "CHI": "Bears", "CIN": "Bengals", "CLE": "Browns",
+    "DAL": "Cowboys", "DEN": "Broncos", "DET": "Lions", "GB": "Packers",
+    "HOU": "Texans", "IND": "Colts", "JAX": "Jaguars", "JAC": "Jaguars",
+    "KC": "Chiefs", "LAC": "Chargers", "LAR": "Rams", "LV": "Raiders",
+    "MIA": "Dolphins", "MIN": "Vikings", "NE": "Patriots", "NO": "Saints",
+    "NYG": "Giants", "NYJ": "Jets", "PHI": "Eagles", "PIT": "Steelers",
+    "SEA": "Seahawks", "SF": "49ers", "TB": "Buccaneers", "TEN": "Titans",
+    "WSH": "Commanders", "WAS": "Commanders",
+}
 
 # ---------------------------------------------------------------- helpers --
 
@@ -110,6 +133,95 @@ def _athlete_name(ref, cache):
         except Exception:
             cache[ref] = ("(unknown player)", "")
     return cache[ref]
+
+
+# ------------------------------------------------- Bovada (priced props) --
+
+def fetch_bovada_events():
+    """Bovada's pregame NFL events: [{'description', 'link'}, ...]."""
+    events = []
+    for grp in _get_json(BOVADA_COUPON):
+        events.extend(grp.get("events", []))
+    return events
+
+
+_BOVADA_PLAYER = re.compile(r"^(.+?) - (.+?) \((\w{2,3})\)$")
+
+
+def parse_bovada_props(payload):
+    """Bovada event JSON -> player O/U props with priced lines.
+
+    Each prop: {player, team, type, matchup,
+                lines: [{line, over, under}, ...]}  (American prices)
+    """
+    ev = payload[0]["events"][0]
+    matchup = ev.get("description", "")
+    props = []
+    for g in ev.get("displayGroups", []):
+        for m in g.get("markets", []):
+            if m.get("key") != "2W-OU" or not (m.get("period") or {}).get("main"):
+                continue
+            mt = _BOVADA_PLAYER.match(m.get("description", ""))
+            if not mt:
+                continue  # game/team market, not a player prop
+            ptype, player, team = mt.groups()
+            pairs = {}
+            for o in m.get("outcomes", []):
+                if o.get("status") != "O":
+                    continue
+                pr = o.get("price") or {}
+                h, am = pr.get("handicap"), pr.get("american")
+                if h is None or am is None:
+                    continue
+                if str(am).upper() in ("EVEN", "EV"):
+                    am = 100.0
+                pairs.setdefault(float(h), {})[o.get("type")] = float(am)
+            lines = [{"line": h, "over": v["O"], "under": v["U"]}
+                     for h, v in sorted(pairs.items())
+                     if "O" in v and "U" in v]
+            if lines:
+                props.append({"player": player, "team": team, "type": ptype,
+                              "matchup": matchup, "lines": lines})
+    return props
+
+
+def fetch_bovada_props(link):
+    return parse_bovada_props(_get_json(BOVADA_EVENT.format(link=link)))
+
+
+def _match_bovada_event(events, team):
+    """Find the event whose name contains the team (abbrev or name)."""
+    needle = TEAM_NICKNAMES.get(team.upper(), team).lower()
+    for e in events:
+        if needle in e.get("description", "").lower():
+            return e
+    return None
+
+
+def prop_probs(ln):
+    """De-vigged (p_over, p_under) for one priced line."""
+    return devig(american_to_prob(ln["over"]), american_to_prob(ln["under"]))
+
+
+def main_line(prop):
+    """The market's main line: the one closest to a coin flip."""
+    return min(prop["lines"],
+               key=lambda ln: abs(prop_probs(ln)[0] - 0.5))
+
+
+def best_prop_side(prop):
+    """(side, line, prob) for the safest side across all posted lines."""
+    best = None
+    for ln in prop["lines"]:
+        po, pu = prop_probs(ln)
+        for side, p in (("Over", po), ("Under", pu)):
+            if best is None or p > best[2]:
+                best = (side, ln, p)
+    return best
+
+
+def _fmt_am(x):
+    return f"{int(x):+d}"
 
 
 def _kickoff_et(iso):
@@ -193,27 +305,73 @@ DEMO_GAMES = [
 ]
 
 
-# Offline sample props: the real JAX @ DEN lines from Sun Sep 20, 2026.
+# Offline sample props: real JAX @ DEN Bovada prices from Sun Sep 20, 2026.
+DEMO_PROPS_MATCHUP = "Jacksonville Jaguars @ Denver Broncos"
 DEMO_PROPS = [
-    {"player": "Trevor Lawrence",   "pos": "QB", "type": "Total Passing Yards",   "line": 223.5},
-    {"player": "Bo Nix",            "pos": "QB", "type": "Total Passing Yards",   "line": 221.5},
-    {"player": "J.K. Dobbins",      "pos": "RB", "type": "Total Rushing Yards",   "line": 58.5},
-    {"player": "Bhayshul Tuten",    "pos": "RB", "type": "Total Rushing Yards",   "line": 49.5},
-    {"player": "Parker Washington", "pos": "WR", "type": "Total Receiving Yards", "line": 59.5},
-    {"player": "Jaylen Waddle",     "pos": "WR", "type": "Total Receiving Yards", "line": 54.5},
-    {"player": "Courtland Sutton",  "pos": "WR", "type": "Total Receiving Yards", "line": 40.5},
-    {"player": "Brian Thomas Jr.",  "pos": "WR", "type": "Total Receiving Yards", "line": 32.5},
-    {"player": "Evan Engram",       "pos": "TE", "type": "Total Receiving Yards", "line": 26.5},
-    {"player": "Jaylen Waddle",     "pos": "WR", "type": "Total Receptions",      "line": 4.5},
-    {"player": "Parker Washington", "pos": "WR", "type": "Total Receptions",      "line": 4.5},
+    {"player": "Bo Nix", "team": "DEN", "type": "Total Passing Yards",
+     "matchup": DEMO_PROPS_MATCHUP, "lines": [
+        {"line": 191.5, "over": -250, "under": 185},
+        {"line": 201.5, "over": -190, "under": 145},
+        {"line": 211.5, "over": -145, "under": 110},
+        {"line": 221.5, "over": -115, "under": -115},
+        {"line": 231.5, "over": 110, "under": -145},
+        {"line": 241.5, "over": 140, "under": -185},
+        {"line": 251.5, "over": 175, "under": -240}]},
+    {"player": "Trevor Lawrence", "team": "JAX", "type": "Total Passing Yards",
+     "matchup": DEMO_PROPS_MATCHUP, "lines": [
+        {"line": 193.5, "over": -250, "under": 185},
+        {"line": 213.5, "over": -145, "under": 110},
+        {"line": 223.5, "over": -115, "under": -115},
+        {"line": 243.5, "over": 140, "under": -185}]},
+    {"player": "J.K. Dobbins", "team": "DEN", "type": "Total Rushing Yards",
+     "matchup": DEMO_PROPS_MATCHUP, "lines": [
+        {"line": 48.5, "over": -200, "under": 150},
+        {"line": 58.5, "over": -110, "under": -120},
+        {"line": 68.5, "over": 150, "under": -200}]},
+    {"player": "Bhayshul Tuten", "team": "JAX", "type": "Total Rushing Yards",
+     "matchup": DEMO_PROPS_MATCHUP, "lines": [
+        {"line": 39.5, "over": -220, "under": 165},
+        {"line": 49.5, "over": -115, "under": -115},
+        {"line": 59.5, "over": 150, "under": -200}]},
+    {"player": "Chris Rodriguez", "team": "JAX", "type": "Total Rushing Yards",
+     "matchup": DEMO_PROPS_MATCHUP, "lines": [
+        {"line": 15.5, "over": -310, "under": 225},
+        {"line": 25.5, "over": -110, "under": -120},
+        {"line": 35.5, "over": 190, "under": -260}]},
+    {"player": "Parker Washington", "team": "JAX",
+     "type": "Total Receiving Yards", "matchup": DEMO_PROPS_MATCHUP, "lines": [
+        {"line": 49.5, "over": -185, "under": 140},
+        {"line": 59.5, "over": -115, "under": -115},
+        {"line": 69.5, "over": 135, "under": -180}]},
+    {"player": "Jaylen Waddle", "team": "DEN",
+     "type": "Total Receiving Yards", "matchup": DEMO_PROPS_MATCHUP, "lines": [
+        {"line": 44.5, "over": -185, "under": 140},
+        {"line": 54.5, "over": -110, "under": -120},
+        {"line": 64.5, "over": 140, "under": -185}]},
+    {"player": "Courtland Sutton", "team": "DEN",
+     "type": "Total Receiving Yards", "matchup": DEMO_PROPS_MATCHUP, "lines": [
+        {"line": 30.5, "over": -215, "under": 160},
+        {"line": 40.5, "over": -115, "under": -115},
+        {"line": 50.5, "over": 145, "under": -190}]},
+    {"player": "Evan Engram", "team": "DEN", "type": "Total Receiving Yards",
+     "matchup": DEMO_PROPS_MATCHUP, "lines": [
+        {"line": 26.5, "over": -110, "under": -120}]},
+    {"player": "Jaylen Waddle", "team": "DEN", "type": "Total Receptions",
+     "matchup": DEMO_PROPS_MATCHUP, "lines": [
+        {"line": 4.5, "over": 105, "under": -135}]},
+    {"player": "Brian Thomas", "team": "JAX", "type": "Total Receptions",
+     "matchup": DEMO_PROPS_MATCHUP, "lines": [
+        {"line": 2.5, "over": -125, "under": -105}]},
+    {"player": "Courtland Sutton", "team": "DEN", "type": "Total Receptions",
+     "matchup": DEMO_PROPS_MATCHUP, "lines": [
+        {"line": 3.5, "over": -110, "under": -120}]},
 ]
-DEMO_PROPS_MATCHUP = "JAX @ DEN"
 
 # Which prop types each --type filter keeps (substring match, lowercased).
 PROP_FILTERS = {
     "pass": ["passing"],
     "rush": ["rushing"],
-    "rec":  ["receiving", "receptions"],
+    "rec":  ["receiving", "reception"],
     "td":   ["touchdown"],
     "all":  [],  # everything with a posted line
 }
@@ -276,62 +434,89 @@ def _find_pregame_event(payload, team):
     return None
 
 
-def cmd_props(args):
-    if args.demo:
-        matchup, total = DEMO_PROPS_MATCHUP, len(DEMO_PROPS)
-        props = [p for p in DEMO_PROPS
-                 if _prop_matches(p["type"], args.type)]
-    else:
-        try:
-            payload = fetch_live(args.date)
-        except Exception as e:
-            sys.exit(f"Couldn't reach ESPN ({e}). "
-                     f"Check your connection or run with --demo.")
-        found = _find_pregame_event(payload, args.team)
-        if not found:
-            sys.exit(f"No upcoming game found for '{args.team}'. "
-                     f"Run the slate command to see what's on the board.")
-        eid, matchup = found
-        try:
-            raw = fetch_props(eid)
-        except Exception as e:
-            sys.exit(f"Couldn't fetch props ({e}).")
-        # Keep props with a posted line; ESPN lists each one twice, so
-        # dedupe on (player, prop type, line).
-        lined, seen = [], set()
-        for r in raw:
-            line = (r.get("current") or {}).get("target", {}).get("value")
-            if line is None:
-                continue
-            key = (r.get("athlete", {}).get("$ref"),
-                   r["type"]["name"], line)
-            if key in seen:
-                continue
-            seen.add(key)
-            lined.append(r)
-        total = len(lined)
-        lined = [r for r in lined
-                 if _prop_matches(r["type"]["name"], args.type)]
-        # Core full-game props first, then the rest alphabetically.
-        lined.sort(key=lambda r: (
-            r["type"]["name"].replace(" (incl. overtime)", "").lower()
-            not in DEFAULT_PROP_TYPES,
-            r["type"]["name"],
-            -r["current"]["target"]["value"]))
-        lined = lined[:args.limit]
-        cache = {}
-        props = []
-        for r in lined:
-            name, pos = _athlete_name(r["athlete"]["$ref"], cache)
-            props.append({"player": name, "pos": pos,
-                          "type": r["type"]["name"],
-                          "line": r["current"]["target"]["value"]})
+def _sort_props(props):
+    """Core full-game props first, then the rest alphabetically."""
+    props.sort(key=lambda p: (p["type"].lower() not in DEFAULT_PROP_TYPES,
+                              p["type"],
+                              -main_line(p)["line"]))
 
+
+def _print_priced_props(matchup, props, total, show_alts):
+    if not props:
+        print("No props matched that filter.")
+        return
+    print(f"\nPLAYER PROPS — {matchup}  (showing {len(props)} of {total})")
+    print("-" * 78)
+    print(f"{'PLAYER':<25}{'PROP':<18}{'LINE':>7}"
+          f"{'OVER':>14}{'UNDER':>14}")
+    print("-" * 78)
+    for p in props:
+        label = p["type"].replace("Total ", "")
+        lines = (sorted(p["lines"], key=lambda l: l["line"])
+                 if show_alts else [main_line(p)])
+        first = True
+        for ln in lines:
+            po, pu = prop_probs(ln)
+            who = f"{p['player']} ({p['team']})" if first else ""
+            print(f"{who:<25}{label if first else '':<18}{ln['line']:>7g}"
+                  f"{po*100:>6.1f}% {_fmt_am(ln['over']):>6}"
+                  f"{pu*100:>6.1f}% {_fmt_am(ln['under']):>6}")
+            first = False
+    print("\nPrices from Bovada, probabilities de-vigged (each line's two"
+          "\nsides sum to 100%). The posted price is what the book pays;"
+          "\nthe fair price for that probability is always better.\n")
+
+
+def _cmd_props_espn(args):
+    """Fallback: ESPN publishes prop lines but no prices."""
+    try:
+        payload = fetch_live(args.date)
+    except Exception as e:
+        sys.exit(f"Couldn't reach ESPN ({e}). "
+                 f"Check your connection or run with --demo.")
+    found = _find_pregame_event(payload, args.team)
+    if not found:
+        sys.exit(f"No upcoming game found for '{args.team}'. "
+                 f"Run the slate command to see what's on the board.")
+    eid, matchup = found
+    try:
+        raw = fetch_props(eid)
+    except Exception as e:
+        sys.exit(f"Couldn't fetch props ({e}).")
+    # Keep props with a posted line; ESPN lists each one twice, so
+    # dedupe on (player, prop type, line).
+    lined, seen = [], set()
+    for r in raw:
+        line = (r.get("current") or {}).get("target", {}).get("value")
+        if line is None:
+            continue
+        key = (r.get("athlete", {}).get("$ref"), r["type"]["name"], line)
+        if key in seen:
+            continue
+        seen.add(key)
+        lined.append(r)
+    total = len(lined)
+    lined = [r for r in lined
+             if _prop_matches(r["type"]["name"], args.type)]
+    # Core full-game props first, then the rest alphabetically.
+    lined.sort(key=lambda r: (
+        r["type"]["name"].replace(" (incl. overtime)", "").lower()
+        not in DEFAULT_PROP_TYPES,
+        r["type"]["name"],
+        -r["current"]["target"]["value"]))
+    lined = lined[:args.limit]
+    cache = {}
+    props = []
+    for r in lined:
+        name, pos = _athlete_name(r["athlete"]["$ref"], cache)
+        props.append({"player": name, "pos": pos,
+                      "type": r["type"]["name"],
+                      "line": r["current"]["target"]["value"]})
     if not props:
         print("No props matched that filter.")
         return
     print(f"\nPLAYER PROP LINES — {matchup}  "
-          f"(showing {len(props)} of {total} posted)")
+          f"(showing {len(props)} of {total} posted; ESPN, no prices)")
     print("-" * 66)
     print(f"{'PLAYER':<24}{'POS':<5}{'PROP':<30}{'LINE':>7}")
     print("-" * 66)
@@ -339,8 +524,65 @@ def cmd_props(args):
         label = p["type"].replace(" (incl. overtime)", "")
         print(f"{p['player']:<24}{p['pos']:<5}{label:<30}{p['line']:>7g}")
     print("\nESPN publishes prop lines, not prices. At the market line either"
-          "\nside is ~50/50 before the book's ~-110 juice. Pick your side —"
-          "\nthe parlay math (parlay --props N) is the same either way.\n")
+          "\nside is ~50/50 before the book's ~-110 juice.\n")
+
+
+def cmd_props(args):
+    if args.demo:
+        props = [p for p in DEMO_PROPS if _prop_matches(p["type"], args.type)]
+        _sort_props(props)
+        _print_priced_props(DEMO_PROPS_MATCHUP, props[:args.limit],
+                            len(DEMO_PROPS), args.alts)
+        return
+    if args.source == "espn":
+        _cmd_props_espn(args)
+        return
+    try:
+        events = fetch_bovada_events()
+        ev = _match_bovada_event(events, args.team)
+        if ev is None:
+            sys.exit(f"No upcoming game found for '{args.team}' on Bovada. "
+                     f"Run the slate command to see what's on the board.")
+        props = fetch_bovada_props(ev["link"])
+    except SystemExit:
+        raise
+    except Exception as e:
+        if args.source == "bovada":
+            sys.exit(f"Couldn't fetch props from Bovada ({e}).")
+        print(f"Bovada unreachable ({e}) — falling back to ESPN lines.",
+              file=sys.stderr)
+        _cmd_props_espn(args)
+        return
+    total = len(props)
+    props = [p for p in props if _prop_matches(p["type"], args.type)]
+    _sort_props(props)
+    if not props:
+        print("No props matched that filter.")
+        return
+    _print_priced_props(ev["description"], props[:args.limit], total,
+                        args.alts)
+
+
+SHORT_PROP = {"Total Passing Yards": "Pass Yds",
+              "Total Rushing Yards": "Rush Yds",
+              "Total Receiving Yards": "Rec Yds",
+              "Total Receptions": "Recs"}
+
+
+def prop_leg_candidates(props):
+    """Safest priced side per player, core prop types only, best first."""
+    by_player = {}
+    for pr in props:
+        if pr["type"].lower() not in DEFAULT_PROP_TYPES:
+            continue
+        side, ln, p = best_prop_side(pr)
+        cur = by_player.get(pr["player"])
+        if cur is None or p > cur["p"]:
+            by_player[pr["player"]] = {
+                "player": pr["player"], "team": pr["team"],
+                "type": pr["type"], "side": side,
+                "line": ln["line"], "p": p}
+    return sorted(by_player.values(), key=lambda c: -c["p"])
 
 
 def cmd_parlay(args):
@@ -352,6 +594,29 @@ def cmd_parlay(args):
     if len(games) < n_ml:
         sys.exit(f"Only {len(games)} games available — can't build "
                  f"a parlay with {n_ml} moneyline legs.")
+
+    prop_legs = []
+    if n_props:
+        if args.demo:
+            all_props = DEMO_PROPS
+        else:
+            try:
+                all_props = []
+                for e in fetch_bovada_events():
+                    try:
+                        all_props.extend(fetch_bovada_props(e["link"]))
+                    except Exception:
+                        continue  # one game's board down; use the rest
+            except Exception as e:
+                all_props = []
+            if not all_props:
+                sys.exit("Couldn't fetch prop prices from Bovada — "
+                         "drop --props or try again later.")
+        cands = prop_leg_candidates(all_props)
+        if len(cands) < n_props:
+            sys.exit(f"Only {len(cands)} priced prop markets found — "
+                     f"can't fill {n_props} prop legs.")
+        prop_legs = cands[:n_props]
 
     # Candidate legs = the favorite in every game.
     legs = []
@@ -366,23 +631,27 @@ def cmd_parlay(args):
     if n_ml:
         best = max(combinations(legs, n_ml),
                    key=lambda c: prod(p for *_ , p in c))
-    combined = prod(p for *_, p in best) * 0.5 ** n_props
+    combined = (prod(p for *_, p in best)
+                * prod(c["p"] for c in prop_legs))
     fair_dec = 1.0 / combined
     payout = args.stake * fair_dec
 
     label = "MONEYLINE" if not n_props else "MONEYLINE + PROPS"
     print(f"\nSAFEST {args.legs}-LEG {label} PARLAY "
           f"({len(games)} games on the board)")
-    print("-" * 60)
+    print("-" * 68)
     n = 0
     for n, (team, matchup, p) in enumerate(
             sorted(best, key=lambda x: -x[2]), 1):
-        print(f"  LEG {n}: {team:<5} ML  ({matchup:<12}) "
+        print(f"  LEG {n}: {team:<5} ML  ({matchup:<21}) "
               f"{p*100:5.1f}%  fair {prob_to_american(p)}")
-    for i in range(n + 1, n + 1 + n_props):
-        print(f"  LEG {i}: PROP  your pick, either side   "
-              f" 50.0%  fair +100")
-    print("-" * 60)
+    for i, c in enumerate(prop_legs, n + 1):
+        side = "Ov" if c["side"] == "Over" else "Un"
+        desc = (f"{c['player']} ({c['team']}) {side} {c['line']:g} "
+                f"{SHORT_PROP.get(c['type'], c['type'])}")
+        print(f"  LEG {i}: {desc:<33} "
+              f"{c['p']*100:5.1f}%  fair {prob_to_american(c['p'])}")
+    print("-" * 68)
     print(f"  COMBINED HIT PROBABILITY : {combined*100:.1f}%")
     print(f"  FAIR PARLAY PRICE        : {prob_to_american(combined)}"
           f"  (books pay less after vig)")
@@ -390,10 +659,10 @@ def cmd_parlay(args):
           f"${payout:.2f}  (${payout - args.stake:.2f} profit)")
 
     if n_props:
-        print(f"\n  Prop legs: ESPN posts lines without prices, and a prop at"
-              f"\n  the market line is ≈50/50 whichever side you take — so"
-              f"\n  each prop leg halves the ticket's chances and roughly"
-              f"\n  doubles its fair payout. Browse lines with: props <TEAM>")
+        print(f"\n  Prop legs are the safest priced sides on Bovada's board"
+              f"\n  (alternate lines included), de-vigged like everything"
+              f"\n  else. Legs are treated as independent: books price"
+              f"\n  same-game combos differently and may bar some entirely.")
 
     if args.target:
         per_leg = args.target ** (1.0 / args.legs)
@@ -401,7 +670,8 @@ def cmd_parlay(args):
         if combined >= args.target:
             print(f"  ✓ This ticket clears your target.")
         else:
-            print(f"  ✗ Not reachable on moneylines today. "
+            board = "on this board" if n_props else "on moneylines today"
+            print(f"  ✗ Not reachable {board}. "
                   f"{args.target*100:.0f}% over {args.legs} legs needs "
                   f"~{per_leg*100:.1f}% per leg "
                   f"(≈ {prob_to_american(per_leg)} each).")
@@ -460,6 +730,12 @@ def main():
                          "(default: the core yardage/receptions props)")
     pr.add_argument("--limit", type=int, default=20,
                     help="max props to show (default 20)")
+    pr.add_argument("--alts", action="store_true",
+                    help="show every alternate line, not just the main one")
+    pr.add_argument("--source", choices=["auto", "bovada", "espn"],
+                    default="auto",
+                    help="odds source (default auto: Bovada prices, "
+                         "ESPN lines as fallback)")
 
     args = ap.parse_args()
     if args.cmd == "slate":
