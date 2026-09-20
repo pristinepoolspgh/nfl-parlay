@@ -274,7 +274,7 @@ def build_snapshot():
     stamp = (datetime.now(np._EASTERN) if np._EASTERN
              else datetime.utcnow()).strftime("%b %d, %Y %I:%M %p ET")
     return {"generated": stamp, "week": week, "games": games,
-            "props": props[:14], "alts": alts, "scores": scores,
+            "props": props[:24], "alts": alts, "scores": scores,
             "live": live}
 
 

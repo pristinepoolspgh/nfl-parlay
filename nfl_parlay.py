@@ -340,7 +340,13 @@ def fetch_fd_props(event_id, matchup):
                           "matchup": matchup, "side": side,
                           "line": r.get("handicap"), "p": p,
                           "odds": _fd_odds(r),
-                          "market": m["marketId"], "sel": r["selectionId"]})
+                          "market": m["marketId"], "sel": r["selectionId"],
+                          "over": {"p": round(po, 5),
+                                   "odds": _fd_odds(over),
+                                   "sel": over["selectionId"]},
+                          "under": {"p": round(pu, 5),
+                                    "odds": _fd_odds(under),
+                                    "sel": under["selectionId"]}})
     return props
 
 
