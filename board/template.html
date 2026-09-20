@@ -198,6 +198,40 @@ button.side.on small{color:var(--go-ink)}
 .scorebox .m{font-variant-numeric:tabular-nums}
 .scorebox .fin{color:var(--faint)}
 .scorebox .detail{color:var(--muted); font-size:12.5px; text-align:right; font-variant-numeric:tabular-nums}
+.savebar{padding:0 14px 12px; display:flex; gap:8px; align-items:center}
+.savebar button{
+  flex:1; border:1px dashed var(--edge); background:none; color:var(--muted);
+  font:600 13px/1 Barlow, sans-serif; letter-spacing:.04em;
+  padding:11px; border-radius:9px; cursor:pointer; transition:color .15s, border-color .15s;
+}
+.savebar button:hover{color:var(--go); border-color:var(--go)}
+.savebar .saved{color:var(--go); font-size:12.5px; white-space:nowrap}
+.record{color:var(--muted); font-size:12.5px; font-variant-numeric:tabular-nums}
+.tk{padding:12px 14px}
+.tk + .tk{border-top:1px solid var(--edge)}
+.tk .head{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
+.tk .when{color:var(--muted); font-size:12px}
+.tk .line{font:600 14px/1.3 Barlow, sans-serif}
+.tk .money{color:var(--money); font-variant-numeric:tabular-nums}
+.tk .lgs{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+.chip{
+  border:1px solid var(--edge); background:var(--inset); color:var(--ink);
+  font:600 12px/1 "Barlow Condensed", sans-serif; letter-spacing:.03em;
+  padding:7px 9px; border-radius:99px; cursor:pointer; transition:transform .1s;
+}
+.chip:active{transform:scale(.94)}
+.chip.won{background:rgba(47,168,114,.16); border-color:var(--go); color:var(--go)}
+.chip.lost{background:rgba(199,69,69,.14); border-color:#C74545; color:#C74545; text-decoration:line-through}
+.badge{
+  font:700 11px/1 Barlow, sans-serif; letter-spacing:.08em; text-transform:uppercase;
+  padding:5px 8px; border-radius:6px; white-space:nowrap;
+}
+.badge.hit{background:var(--go); color:var(--go-ink)}
+.badge.missed{background:#C74545; color:#fff}
+.badge.pending{background:var(--inset); color:var(--muted); border:1px solid var(--edge)}
+.tk .del{border:0; background:none; color:var(--faint); cursor:pointer; font-size:15px; padding:2px 6px}
+.tk .del:hover{color:#C74545}
+.tk .hint{color:var(--faint); font-size:11.5px; margin-top:7px}
 footer{color:var(--faint); font-size:12px; line-height:1.5}
 @media (max-width:400px){
   .controls .ctl:last-child{grid-column:1 / -1}
@@ -243,6 +277,10 @@ footer{color:var(--faint); font-size:12px; line-height:1.5}
       <a class="ticket" id="ticket" target="_blank" rel="noopener">Bet this ticket on FanDuel</a>
       <p>Opens the FanDuel app with every leg on the slip. Check the picks and price there before you fire.</p>
     </div>
+    <div class="savebar" id="savebar" hidden>
+      <button id="save">Save ticket to my tracker</button>
+      <span class="saved" id="savednote" hidden>Saved ✓</span>
+    </div>
     <div class="tear"></div>
     <div class="summary">
       <div class="stat"><div class="k">Hits</div><div class="v" id="comb"></div></div>
@@ -258,6 +296,9 @@ footer{color:var(--faint); font-size:12px; line-height:1.5}
       <small>PB &middot; de-vigged from FanDuel&rsquo;s board<br>fair math &middot; no vig &middot; good luck</small>
     </div>
   </section>
+
+  <h2 id="tkhead" hidden>My tickets <small class="record" id="record"></small></h2>
+  <section class="card" id="tkcard" hidden><div id="tickets"></div></section>
 
   <h2 id="scorehead" hidden>On the field</h2>
   <section class="card scorebox" id="scorecard" hidden><ul class="rows" id="scores"></ul></section>
@@ -431,6 +472,9 @@ function render(){
 
   const stake = parseFloat($("stake").value) || 0;
   const fdDec = ticketLegs.reduce((a,l) => a*dec(l.odds), 1);
+  CUR = {legs: ticketLegs, combined, fdDec, stake};
+  $("savebar").hidden = !(dbReady && ticketLegs.length);
+  $("savednote").hidden = true;
   $("comb").textContent = ticketLegs.length ? pct(combined) : "—";
   $("fair").innerHTML = ticketLegs.length
     ? "$"+(stake/combined).toFixed(2)+` <small>${am(combined)}</small>` : "—";
@@ -511,5 +555,98 @@ $("propboard").innerHTML = D.props.map(c => {
 
 document.querySelectorAll("button.side").forEach(b =>
   b.onclick = () => toggleLeg(b.dataset.k));
+
+// ------------------------------------------------------ ticket tracker --
+let CUR = {legs: [], combined: 1, fdDec: 1, stake: 0};
+let dbReady = false, DBH = null, writing = false;
+
+const kindOf = d => d.endsWith(" ML") ? "ml"
+  : /^(Over|Under) [\d.]+ pts$/.test(d) ? "total"
+  : /^[A-Z]{2,3} [+-][\d.]+$/.test(d) ? "spread" : "prop";
+const matchOf = l => {
+  const s = l.sub || "";
+  return s.split(" · ").find(x => x.includes(" @ ")) || "";
+};
+const deriveStatus = lgs =>
+  lgs.some(l => l.result === "lost") ? "missed" :
+  lgs.every(l => l.result === "won") ? "hit" : "pending";
+
+const _dbUse = window.claude && window.claude.use
+  ? window.claude.use("db") : null;
+if (_dbUse) _dbUse.then(db => {
+  if (!db) return;
+  DBH = db; dbReady = true;
+  $("savebar").hidden = !CUR.legs.length;
+  db.collection("tickets").orderBy("placed", "desc").limit(30)
+    .onSnapshot(renderTickets, () => {});
+});
+
+$("save").onclick = async () => {
+  if (!DBH || !CUR.legs.length || writing) return;
+  writing = true;
+  try {
+    await DBH.collection("tickets").add({
+      placed: new Date().toISOString(), week: D.week,
+      stake: CUR.stake, combined: CUR.combined,
+      fdPays: CUR.stake * CUR.fdDec, status: "pending",
+      legs: CUR.legs.map(l => ({desc: l.desc, sub: l.sub || "",
+        p: l.p, odds: l.odds, kind: kindOf(l.desc),
+        matchup: matchOf(l), result: "pending"}))});
+    $("savednote").hidden = false;
+  } catch(e){} finally { writing = false; }
+};
+
+function renderTickets(snap){
+  const has = !snap.empty;
+  $("tkhead").hidden = !has;
+  $("tkcard").hidden = !has;
+  if (!has) return;
+  let w = 0, l = 0, p = 0, net = 0;
+  const html = snap.docs.map(dsnap => {
+    const t = dsnap.data();
+    if (t.status === "hit"){ w++; net += t.fdPays - t.stake; }
+    else if (t.status === "missed"){ l++; net -= t.stake; }
+    else p++;
+    const when = new Date(t.placed).toLocaleDateString("en-US",
+      {month: "short", day: "numeric"});
+    const chips = t.legs.map((lg, i) =>
+      `<button class="chip ${lg.result === "won" ? "won" : lg.result === "lost" ? "lost" : ""}"
+        data-t="${dsnap.id}" data-i="${i}">${lg.desc}</button>`).join("");
+    return `<div class="tk">
+      <div class="head">
+        <span><span class="line">$${(+t.stake).toFixed(0)} →
+          <span class="money">$${(+t.fdPays).toFixed(2)}</span></span>
+          <span class="when"> · ${when} · wk ${t.week} · ${pct(t.combined)}</span></span>
+        <span><span class="badge ${t.status}">${t.status}</span>
+          <button class="del" data-t="${dsnap.id}" aria-label="Delete ticket">&times;</button></span>
+      </div>
+      <div class="lgs">${chips}</div>
+      ${t.status === "pending" ? `<div class="hint">Finished games settle automatically on the next refresh; tap a leg to mark it won or lost yourself.</div>` : ""}
+    </div>`;
+  }).join("");
+  $("tickets").innerHTML = html;
+  $("record").textContent =
+    ` · ${w}–${l}${p ? ` (${p} pending)` : ""} · net ${net < 0 ? "−" : "+"}$${Math.abs(net).toFixed(2)}`;
+  document.querySelectorAll("#tickets .chip").forEach(c =>
+    c.onclick = () => cycleLeg(c.dataset.t, +c.dataset.i));
+  document.querySelectorAll("#tickets .del").forEach(b =>
+    b.onclick = () => { if (DBH && !writing) DBH.doc("tickets/" + b.dataset.t).delete(); });
+}
+
+async function cycleLeg(id, i){
+  if (!DBH || writing) return;
+  writing = true;
+  try {
+    const ref = DBH.doc("tickets/" + id);
+    const snap = await ref.get();
+    if (!snap.exists) return;
+    const t = snap.data();
+    const legs = t.legs.map(x => ({...x}));
+    const order = {pending: "won", won: "lost", lost: "pending"};
+    legs[i].result = order[legs[i].result] || "won";
+    await ref.update({legs, status: deriveStatus(legs)});
+  } catch(e){} finally { writing = false; }
+}
+
 render();
 </script>
