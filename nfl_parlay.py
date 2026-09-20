@@ -43,6 +43,7 @@ BET LINKS
 
 import argparse
 import json
+import math
 import re
 import sys
 import urllib.parse
@@ -350,6 +351,135 @@ def fd_ticket_url(legs):
         parts.append(f"marketId[{i}]={l['market']}"
                      f"&selectionId[{i}]={l['sel']}")
     return FD_BETSLIP + "?" + "&".join(parts)
+
+
+def fd_decimal(american):
+    """Decimal odds for an American price."""
+    a = float(american)
+    return 1 + (a / 100 if a > 0 else 100 / -a)
+
+
+def fd_posted_payout(stake, legs):
+    """What FanDuel pays at posted prices (standard cross-game parlay)."""
+    return stake * prod(fd_decimal(l["odds"]) for l in legs)
+
+
+_ALT_SPREAD_RE = re.compile(r"^(.+?) \(([+-]\d+(?:\.\d)?)\)$")
+_ALT_TOTAL_RE = re.compile(r"^(Over|Under) \((\d+(?:\.\d)?)\)$")
+
+
+def fetch_fd_alts(event_id, matchup):
+    """Alternate spread/total rungs for one game, de-vigged in mirror
+    pairs (team A +7.5 against team B -7.5; Over against Under).
+
+    Returns candidate legs [{desc, p, odds, market, sel, matchup}].
+    """
+    try:
+        page = _get_json(FD_EVENT.format(eid=event_id, tab="popular"))
+    except Exception:
+        return []
+    legs = []
+    for m in page.get("attachments", {}).get("markets", {}).values():
+        mt = m.get("marketType")
+        if (m.get("marketStatus") != "OPEN"
+                or mt not in ("ALTERNATE_HANDICAP", "ALTERNATE_TOTAL")):
+            continue
+        entries = {}
+        for r in m.get("runners", []):
+            if r.get("runnerStatus") != "ACTIVE":
+                continue
+            odds = _fd_odds(r)
+            if odds is None:
+                continue
+            name = r.get("runnerName", "")
+            if mt == "ALTERNATE_HANDICAP":
+                mm = _ALT_SPREAD_RE.match(name)
+                if not mm:
+                    continue
+                who, line = _abbr(mm.group(1)), float(mm.group(2))
+                desc = f"{who} {line:+g}"
+            else:
+                mm = _ALT_TOTAL_RE.match(name)
+                if not mm:
+                    continue
+                who, line = mm.group(1), float(mm.group(2))
+                line = line if who == "Over" else -line
+                desc = f"{who} {abs(line):g} pts"
+            entries[(who, line)] = (desc, odds, m["marketId"],
+                                    r["selectionId"])
+        done = set()
+        for (who, line), a in entries.items():
+            if line <= 0 or (who, line) in done:
+                continue
+            comp = next((k for k in entries
+                         if k[0] != who and k[1] == -line), None)
+            if comp is None:
+                continue
+            done.add((who, line))
+            done.add(comp)
+            b = entries[comp]
+            pa, pb = devig(american_to_prob(a[1]), american_to_prob(b[1]))
+            for (desc, odds, mid, sel), p in ((a, pa), (b, pb)):
+                legs.append({"desc": desc, "p": p, "odds": odds,
+                             "market": mid, "sel": sel, "matchup": matchup})
+    return legs
+
+
+def build_target_ticket(events, target, n_legs, favorites=None):
+    """A ticket whose combined probability clears the target while
+    paying as much as the board allows: start each game at its safest
+    alternate line, then walk legs down toward better prices for as
+    long as the product stays over the target. Moneyline favorites
+    compete in each game's ladder alongside the alternates.
+
+    Returns (picks, achieved_or_best, games_with_alts); picks is None
+    when the target is out of reach, with achieved_or_best then the
+    best combined probability the board offers.
+    """
+    ml = {f["matchup"]: f for f in favorites or []}
+    per_game = []
+    for eid, matchup in events.items():
+        rungs = fetch_fd_alts(eid, matchup)
+        if matchup in ml:
+            f = ml[matchup]
+            rungs.append({"desc": f"{f['team']} ML", "p": f["p"],
+                          "odds": f["odds"], "market": f["market"],
+                          "sel": f["sel"], "matchup": matchup})
+        rungs.sort(key=lambda a: a["p"])
+        if rungs:
+            per_game.append(rungs)
+    if len(per_game) < n_legs:
+        return None, 0.0, len(per_game)
+    per_game.sort(key=lambda r: -r[-1]["p"])
+    chosen = per_game[:n_legs]
+    idx = [len(r) - 1 for r in chosen]
+    current = prod(r[i]["p"] for r, i in zip(chosen, idx))
+    if current < target:
+        return None, current, len(per_game)
+    # Repeatedly take the single move that buys the most payout per
+    # unit of probability spent, until no move keeps the target.
+    while True:
+        best_move = None
+        for j, rungs in enumerate(chosen):
+            i = idx[j]
+            for i2 in range(i):
+                r = rungs[i2]["p"] / rungs[i]["p"]
+                if current * r < target:
+                    continue
+                q = (fd_decimal(rungs[i2]["odds"])
+                     / fd_decimal(rungs[i]["odds"]))
+                if q <= 1:
+                    continue
+                value = math.log(q) / max(-math.log(r), 1e-9)
+                if best_move is None or value > best_move[0]:
+                    best_move = (value, j, i2)
+        if best_move is None:
+            break
+        _, j, i2 = best_move
+        current *= chosen[j][i2]["p"] / chosen[j][idx[j]]["p"]
+        idx[j] = i2
+    picks = [r[i] for r, i in zip(chosen, idx)]
+    return picks, current, len(per_game)
 
 
 def _kickoff_et(iso):
@@ -800,11 +930,12 @@ def cmd_parlay_fd(args):
         print(f"  LEG {i}: {desc:<33} "
               f"{c['p']*100:5.1f}%  FD {_fmt_am(c['odds'])}")
     print("-" * 68)
+    fd_pays = fd_posted_payout(args.stake, ml_legs + prop_legs)
     print(f"  COMBINED HIT PROBABILITY : {combined*100:.1f}%")
-    print(f"  FAIR PARLAY PRICE        : {prob_to_american(combined)}"
-          f"  (FanDuel pays less after vig)")
-    print(f"  ${args.stake:.0f} RETURNS (fair)      : "
-          f"${payout:.2f}  (${payout - args.stake:.2f} profit)")
+    print(f"  FAIR PARLAY PRICE        : {prob_to_american(combined)}")
+    print(f"  ${args.stake:.0f} PAYS — fair          : ${payout:.2f}")
+    print(f"  ${args.stake:.0f} PAYS — FD posted     : ${fd_pays:.2f}  "
+          f"(vig costs ${payout - fd_pays:.2f})")
     print(f"\n  ONE-TAP TICKET — opens the FanDuel app with every leg "
           f"on the slip:")
     print(f"  {fd_ticket_url(ml_legs + prop_legs)}")
@@ -812,6 +943,32 @@ def cmd_parlay_fd(args):
           f"Legs are treated\n  as independent; FanDuel reprices "
           f"same-game combos on the slip.")
     _print_target_check(args, combined, n_props)
+
+    if args.target and combined < args.target:
+        picks, achieved, avail = build_target_ticket(events, args.target,
+                                                     args.legs, favs)
+        if picks is None:
+            best = (f"the safest {args.legs} games top out at "
+                    f"{achieved*100:.1f}% combined" if achieved
+                    else f"only {avail} games still have boards up")
+            print(f"\n  Alternate lines can't get there either right now — "
+                  f"{best}.")
+        else:
+            t_combined = achieved
+            t_fd = fd_posted_payout(args.stake, picks)
+            print(f"\n  BUT HERE'S A TICKET THAT DOES — "
+                  f"{args.target*100:.0f}% target, alternate lines:")
+            print("  " + "-" * 64)
+            for i, p in enumerate(picks, 1):
+                print(f"    LEG {i}: {p['desc']:<16} ({p['matchup']:<12}) "
+                      f"{p['p']*100:5.1f}%  FD {_fmt_am(p['odds'])}")
+            print("  " + "-" * 64)
+            print(f"    COMBINED {t_combined*100:.1f}%  ·  "
+                  f"${args.stake:.0f} pays ${t_fd:.2f} at posted odds "
+                  f"(${t_fd - args.stake:.2f} profit)")
+            print(f"    ONE-TAP: {fd_ticket_url(picks)}")
+            print(f"    High-probability tickets pay pennies — "
+                  f"that's the price of safety, not a flaw.")
     print("\n  Estimates, not guarantees. Nothing here is betting advice.\n")
 
 
