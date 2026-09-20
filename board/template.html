@@ -1,0 +1,515 @@
+<title>Parlay Board</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#0E1319; --card:#1B222B; --inset:#141A21; --edge:#2A3441;
+  --ink:#EAF0F6; --muted:#8C99A8; --faint:#5C6875;
+  --go:#2FA872; --go-ink:#0B2A1D; --money:#E3B75D; --bar:#243040;
+  --stripe:rgba(255,255,255,.018);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --ground:#EDF0F3; --card:#FFFFFF; --inset:#F4F6F8; --edge:#D8DFE7;
+    --ink:#161F29; --muted:#5B6875; --faint:#8B96A2;
+    --go:#177A4E; --go-ink:#FFFFFF; --money:#9C7215; --bar:#E3E8EE;
+    --stripe:rgba(0,0,0,.022);
+  }
+}
+:root[data-theme="light"]{
+  --ground:#EDF0F3; --card:#FFFFFF; --inset:#F4F6F8; --edge:#D8DFE7;
+  --ink:#161F29; --muted:#5B6875; --faint:#8B96A2;
+  --go:#177A4E; --go-ink:#FFFFFF; --money:#9C7215; --bar:#E3E8EE;
+  --stripe:rgba(0,0,0,.022);
+}
+*{box-sizing:border-box}
+body{
+  background:var(--ground);
+  background-image:repeating-linear-gradient(90deg,
+    var(--stripe) 0 2px, transparent 2px 72px);
+  color:var(--ink);
+  font:400 15px/1.45 Barlow, system-ui, sans-serif;
+  margin:0; padding-block:20px 40px; padding-inline:16px;
+}
+.wrap{max-width:460px; margin:0 auto; display:flex; flex-direction:column; gap:18px}
+header .eyebrow{
+  display:inline-block; font:600 11px/1 Barlow, sans-serif;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--go);
+  border:1px solid var(--edge); border-radius:99px; padding:5px 10px;
+  background:var(--card); margin-bottom:8px;
+}
+header h1{
+  font:700 38px/1 "Barlow Condensed", Barlow, sans-serif;
+  letter-spacing:.02em; text-transform:uppercase; margin:0;
+}
+header p{margin:4px 0 0; color:var(--muted); font-size:13px}
+.card{background:var(--card); border:1px solid var(--edge); border-radius:14px; overflow:hidden}
+.controls{
+  display:grid; grid-template-columns:1fr 1fr; gap:10px;
+  padding:14px 14px 12px; border-bottom:1px solid var(--edge);
+}
+.ctl{display:flex; flex-direction:column; gap:5px}
+.ctl label{
+  font:600 11px/1 Barlow, sans-serif; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--muted);
+}
+.ctl select{
+  width:100%; border:1px solid var(--edge); border-radius:8px;
+  background:var(--inset); color:var(--ink); padding:8px;
+  font:600 15px/1 "Barlow Condensed", sans-serif; appearance:auto;
+}
+.ctl.dim{opacity:.35; pointer-events:none}
+.step{display:flex; align-items:stretch; border:1px solid var(--edge); border-radius:8px; background:var(--inset)}
+.step button{
+  flex:0 0 30px; border:0; background:none; color:var(--muted);
+  font:600 17px/1 Barlow, sans-serif; cursor:pointer; padding:0;
+  transition:transform .1s;
+}
+.step button:hover{color:var(--ink)}
+.step button:active{transform:scale(.82)}
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible{outline:2px solid var(--go); outline-offset:1px}
+.step .val{
+  flex:1; text-align:center; align-self:center;
+  font:600 18px/1 "Barlow Condensed", sans-serif; font-variant-numeric:tabular-nums;
+}
+.stakebox{display:flex; align-items:center; border:1px solid var(--edge); border-radius:8px; background:var(--inset); padding:0 8px}
+.stakebox span{color:var(--muted); font-weight:600}
+#stake{
+  width:100%; border:0; background:none; color:var(--ink); padding:7px 4px;
+  font:600 18px/1 "Barlow Condensed", sans-serif; font-variant-numeric:tabular-nums;
+}
+.custombar{
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  padding:9px 14px; border-bottom:1px solid var(--edge);
+  background:var(--inset); font-size:12.5px; color:var(--muted);
+}
+.custombar button{
+  border:1px solid var(--edge); background:none; color:var(--go);
+  font:600 12px/1 Barlow, sans-serif; padding:6px 10px; border-radius:7px;
+  cursor:pointer; white-space:nowrap;
+}
+.legs{list-style:none; margin:0; padding:4px 0}
+.empty{padding:18px 14px; color:var(--faint); font-size:13.5px}
+.leg{
+  display:grid; grid-template-columns:30px 1fr auto auto; gap:0 10px;
+  align-items:center; padding:10px 14px;
+}
+.leg + .leg{border-top:1px dashed var(--edge)}
+.leg .num{
+  font:700 12px/24px "Barlow Condensed", sans-serif; text-align:center;
+  color:var(--tc, var(--go)); border:1.5px solid var(--tc, var(--go));
+  border-radius:6px; height:24px; letter-spacing:.02em;
+}
+.leg .who{min-width:0}
+.leg .pick{display:block; font-weight:600; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.leg .sub{display:block; color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.leg .odds{text-align:right}
+.leg .pct{font:600 18px/1.1 "Barlow Condensed", sans-serif; font-variant-numeric:tabular-nums}
+.leg .fair{color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums}
+.meter{grid-column:2 / 5; height:3px; border-radius:2px; background:var(--bar); margin-top:7px; overflow:hidden}
+.meter i{display:block; height:100%; background:var(--tc, var(--go)); transition:width .35s ease}
+a.bet, button.rm{
+  display:inline-block; background:var(--inset); color:var(--go);
+  border:1px solid var(--edge);
+  font:600 13px/1 Barlow, sans-serif; letter-spacing:.04em;
+  padding:8px 12px; border-radius:8px; text-decoration:none; white-space:nowrap;
+  cursor:pointer; transition:transform .1s, border-color .15s;
+}
+a.bet:hover, button.rm:hover{border-color:var(--go)}
+a.bet:active, button.rm:active{transform:scale(.94)}
+button.rm{color:var(--muted)}
+button.rm:hover{color:#C74545; border-color:#C74545}
+.ticketwrap{padding:12px 14px; border-top:1px solid var(--edge)}
+a.ticket{
+  display:block; text-align:center; background:var(--go); color:var(--go-ink);
+  font:600 16px/1 Barlow, sans-serif; letter-spacing:.02em;
+  padding:15px; border-radius:10px; text-decoration:none;
+  transition:transform .12s, filter .15s;
+}
+a.ticket:hover{filter:brightness(1.08)}
+a.ticket:active{transform:scale(.97)}
+a.ticket[aria-disabled="true"]{opacity:.4; pointer-events:none}
+.ticketwrap p{margin:8px 0 0; text-align:center; color:var(--faint); font-size:12px}
+.tear{position:relative; border-top:2px dashed var(--edge); margin:0 -1px}
+.tear::before, .tear::after{
+  content:""; position:absolute; top:-9px; width:16px; height:16px;
+  border-radius:50%; background:var(--ground); border:1px solid var(--edge);
+}
+.tear::before{left:-9px}
+.tear::after{right:-9px}
+.summary{
+  display:grid; grid-template-columns:1fr 1.2fr 1fr; gap:10px;
+  padding:16px 14px 12px; background:var(--inset);
+}
+.stat .k{font:600 10.5px/1 Barlow, sans-serif; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); margin-bottom:4px}
+.stat .v{font:700 26px/1 "Barlow Condensed", sans-serif; font-variant-numeric:tabular-nums}
+.stat .v small{font-size:15px; font-weight:600; color:var(--muted)}
+.stat.pay .v{color:var(--money)}
+.spice{padding:2px 14px 14px; background:var(--inset)}
+.spice .zones{display:flex; height:8px; border-radius:4px; overflow:hidden; position:relative}
+.spice .zones i{flex:1}
+.spice .zones i:nth-child(1){background:#2FA872}
+.spice .zones i:nth-child(2){background:#8CB84C}
+.spice .zones i:nth-child(3){background:#D9A93C}
+.spice .zones i:nth-child(4){background:#D9713C}
+.spice .zones i:nth-child(5){background:#C74545}
+.spice .pin{
+  position:absolute; top:-4px; width:4px; height:16px; border-radius:2px;
+  background:var(--ink); box-shadow:0 0 0 2px var(--inset);
+  transition:left .35s ease;
+}
+.spice .verdict{display:flex; justify-content:space-between; align-items:baseline; margin-top:9px; gap:10px}
+.spice .verdict b{font:700 15px/1 "Barlow Condensed", sans-serif; letter-spacing:.06em; text-transform:uppercase}
+.spice .verdict span{color:var(--muted); font-size:12.5px; text-align:right}
+.stub{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:10px 14px; border-top:1px dashed var(--edge); background:var(--inset);
+}
+.stub .code{
+  height:22px; flex:0 0 96px;
+  background:repeating-linear-gradient(90deg,
+    var(--ink) 0 2px, transparent 2px 4px, var(--ink) 4px 5px,
+    transparent 5px 9px, var(--ink) 9px 12px, transparent 12px 14px);
+  opacity:.75;
+}
+.stub small{color:var(--faint); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; text-align:right}
+h2{
+  font:600 15px/1 "Barlow Condensed", sans-serif; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--muted); margin:4px 0 -8px;
+}
+h2 small{color:var(--faint); letter-spacing:.02em; text-transform:none; font:500 12px/1 Barlow, sans-serif}
+.rows{list-style:none; margin:0; padding:0}
+.rows li{display:grid; grid-template-columns:4px 1fr auto; gap:0 12px; align-items:center; padding:10px 14px 10px 10px}
+.rows li + li{border-top:1px solid var(--edge)}
+.rows .tab{width:4px; height:34px; border-radius:2px; background:var(--tc, var(--edge))}
+.rows .m{font-weight:600}
+.rows .t{color:var(--muted); font-size:12px}
+.sides{display:flex; gap:6px}
+button.side{
+  border:1px solid var(--edge); background:var(--inset); color:var(--ink);
+  font:600 13px/1 "Barlow Condensed", sans-serif; font-variant-numeric:tabular-nums;
+  letter-spacing:.03em; padding:8px 9px; border-radius:8px; cursor:pointer;
+  transition:transform .1s, border-color .15s; white-space:nowrap;
+}
+button.side small{display:block; margin-top:3px; font:500 10.5px/1 Barlow, sans-serif; color:var(--muted)}
+button.side:hover{border-color:var(--go)}
+button.side:active{transform:scale(.94)}
+button.side.on{background:var(--go); border-color:var(--go); color:var(--go-ink)}
+button.side.on small{color:var(--go-ink)}
+.scorebox .m{font-variant-numeric:tabular-nums}
+.scorebox .fin{color:var(--faint)}
+.scorebox .detail{color:var(--muted); font-size:12.5px; text-align:right; font-variant-numeric:tabular-nums}
+footer{color:var(--faint); font-size:12px; line-height:1.5}
+@media (max-width:400px){
+  .controls .ctl:last-child{grid-column:1 / -1}
+}
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important}
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow" id="eyebrow">NFL</span>
+    <h1>Parlay Board</h1>
+    <p id="asof"></p>
+  </header>
+
+  <section class="card" aria-label="Ticket builder">
+    <div class="controls" id="controls">
+      <div class="ctl" id="ctl-legs"><label for="legdn">Legs</label>
+        <div class="step"><button id="legdn" aria-label="Fewer legs">&minus;</button><span class="val" id="legv">4</span><button id="legup" aria-label="More legs">+</button></div>
+      </div>
+      <div class="ctl" id="ctl-props"><label for="propdn">Props</label>
+        <div class="step"><button id="propdn" aria-label="Fewer props">&minus;</button><span class="val" id="propv">1</span><button id="propup" aria-label="More props">+</button></div>
+      </div>
+      <div class="ctl" id="ctl-target"><label for="target">Safety target</label>
+        <select id="target">
+          <option value="0" selected>Off — safest picks</option>
+          <option value="0.80">80% ticket (alt lines)</option>
+          <option value="0.85">85% ticket (alt lines)</option>
+          <option value="0.90">90% ticket (alt lines)</option>
+        </select>
+      </div>
+      <div class="ctl"><label for="stake">Riding on it</label>
+        <div class="stakebox"><span>$</span><input id="stake" inputmode="decimal" value="10"></div>
+      </div>
+    </div>
+    <div class="custombar" id="custombar" hidden>
+      <span>Your ticket — tap odds below to add or remove legs</span>
+      <button id="reset">Back to auto</button>
+    </div>
+    <ul class="legs" id="legs"></ul>
+    <div class="ticketwrap">
+      <a class="ticket" id="ticket" target="_blank" rel="noopener">Bet this ticket on FanDuel</a>
+      <p>Opens the FanDuel app with every leg on the slip. Check the picks and price there before you fire.</p>
+    </div>
+    <div class="tear"></div>
+    <div class="summary">
+      <div class="stat"><div class="k">Hits</div><div class="v" id="comb"></div></div>
+      <div class="stat pay"><div class="k">FD pays</div><div class="v" id="pay"></div></div>
+      <div class="stat"><div class="k">Fair value</div><div class="v" id="fair"></div></div>
+    </div>
+    <div class="spice">
+      <div class="zones"><i></i><i></i><i></i><i></i><i></i><span class="pin" id="pin"></span></div>
+      <div class="verdict"><b id="vlabel"></b><span id="vline"></span></div>
+    </div>
+    <div class="stub">
+      <div class="code" aria-hidden="true"></div>
+      <small>PB &middot; de-vigged from FanDuel&rsquo;s board<br>fair math &middot; no vig &middot; good luck</small>
+    </div>
+  </section>
+
+  <h2 id="scorehead" hidden>On the field</h2>
+  <section class="card scorebox" id="scorecard" hidden><ul class="rows" id="scores"></ul></section>
+
+  <h2>The board <small>&middot; tap a price to build your own</small></h2>
+  <section class="card"><ul class="rows" id="slate"></ul></section>
+
+  <h2>Props <small>&middot; strongest priced sides, one per player</small></h2>
+  <section class="card"><ul class="rows" id="propboard"></ul></section>
+
+  <footer>Probabilities are de-vigged market estimates (each market’s sides sum to
+  100%), not predictions. Fair figures exclude the book’s vig; FanDuel reprices
+  same-game combos on the slip. Lines move; check the slip before betting.
+  Nothing here is betting advice.</footer>
+</div>
+
+<script>
+const D = /*__DATA__*/;
+
+const TEAMCOLOR = {ARI:"#B0294C",ATL:"#C8102E",BAL:"#8A6FD1",BUF:"#4C7FE0",CAR:"#0085CA",
+  CHI:"#C83803",CIN:"#FB4F14",CLE:"#FF3C00",DAL:"#4C7FE0",DEN:"#FB4F14",DET:"#0076B6",
+  GB:"#FFB612",HOU:"#C41E3A",IND:"#4C7FE0",JAX:"#D7A22A",KC:"#E31837",LAC:"#0080C6",
+  LAR:"#FFA300",LV:"#A5ACAF",MIA:"#00B0A6",MIN:"#8A63D2",NE:"#C60C30",NO:"#D3BC8D",
+  NYG:"#4C7FE0",NYJ:"#1E8A5E",PHI:"#0B8577",PIT:"#FFB612",SEA:"#69BE28",SF:"#C9243F",
+  TB:"#D50A0A",TEN:"#5CA8E0",WSH:"#B0563B",WAS:"#B0563B"};
+
+const VERDICTS = [
+  [.65, "Chalk", "safe as it gets — pays like it, too"],
+  [.45, "Sensible", "better than a coin flip"],
+  [.28, "Coin-flippy", "sweat guaranteed, roughly 50/50 territory"],
+  [.12, "Spicy", "fun-money ticket — hits sometimes"],
+  [0,   "Lotto", "frame it if it ever cashes"]
+];
+
+const $ = id => document.getElementById(id);
+const am = p => p<=0||p>=1 ? "n/a" :
+  p>=.5 ? "−"+Math.round(p/(1-p)*100) : "+"+Math.round((1-p)/p*100);
+const fd = o => o<0 ? "−"+Math.abs(o) : "+"+o;
+const dec = o => o>0 ? 1+o/100 : 1+100/(-o);
+const pct = p => (p*100).toFixed(1)+"%";
+const key = l => l.market+":"+l.sel;
+const slip = legs => "https://sportsbook.fanduel.com/addToBetslip?" +
+  legs.map((l,i) => `marketId[${i}]=${l.market}&selectionId[${i}]=${l.sel}`).join("&");
+
+function kick(s){
+  const [d,t] = s.split(" "), [H,M] = t.split(":").map(Number);
+  const day = new Date(d+"T12:00:00").getDay();
+  const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const hh = ((H+11)%12)+1, ap = H>=12?"PM":"AM";
+  return names[day]+" "+hh+":"+String(M).padStart(2,"0")+" "+ap;
+}
+
+const mlLeg = (g, s) => ({desc: s.team+" ML", team: s.team, p: s.p,
+  odds: s.odds, market: g.market, sel: s.sel,
+  sub: g.matchup+" · "+kick(g.start)});
+const propLeg = c => ({desc: `${c.player} ${c.side==="Over"?"O":"U"} ${c.line}`,
+  team: null, p: c.p, odds: c.odds, market: c.market, sel: c.sel,
+  sub: c.type+" · "+c.matchup});
+const ALL_LEGS = {};
+D.games.forEach(g => g.sides.forEach(s => { const l = mlLeg(g, s); ALL_LEGS[key(l)] = l; }));
+D.props.forEach(c => { const l = propLeg(c); ALL_LEGS[key(l)] = l; });
+
+function buildTarget(target, n){
+  const ladders = Object.entries(D.alts)
+    .map(([mu, rungs]) => ({mu, rungs}))
+    .filter(l => l.rungs.length)
+    .sort((a,b) => b.rungs[b.rungs.length-1].p - a.rungs[a.rungs.length-1].p)
+    .slice(0, n);
+  if (ladders.length < n) return null;
+  const idx = ladders.map(l => l.rungs.length - 1);
+  let cur = ladders.reduce((acc,l,j) => acc * l.rungs[idx[j]].p, 1);
+  const reachable = cur >= target;
+  if (reachable){
+    for(;;){
+      let best = null;
+      ladders.forEach((l, j) => {
+        const i = idx[j];
+        for (let i2 = 0; i2 < i; i2++){
+          const r = l.rungs[i2].p / l.rungs[i].p;
+          if (cur * r < target) continue;
+          const q = dec(l.rungs[i2].odds) / dec(l.rungs[i].odds);
+          if (q <= 1) continue;
+          const v = Math.log(q) / Math.max(-Math.log(r), 1e-9);
+          if (!best || v > best.v) best = {v, j, i2};
+        }
+      });
+      if (!best) break;
+      cur *= ladders[best.j].rungs[best.i2].p / ladders[best.j].rungs[idx[best.j]].p;
+      idx[best.j] = best.i2;
+    }
+  }
+  return {reachable, combined: cur,
+          legs: ladders.map((l,j) => ({...l.rungs[idx[j]],
+            sub: l.mu, team: (l.rungs[idx[j]].desc||"").split(" ")[0]}))};
+}
+
+let legs = 4, props = 1;
+const custom = new Map();
+let shownPay = null, payAnim = null;
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+try { const s = localStorage.getItem("stake"); if (s) $("stake").value = s; } catch(e){}
+
+function clamp(){
+  props = Math.max(0, Math.min(props, D.props.length, legs));
+  if (legs - props > D.games.length) legs = D.games.length + props;
+  legs = Math.max(1, Math.min(legs, D.games.length + D.props.length));
+  props = Math.min(props, legs);
+}
+
+function showPay(target, stake){
+  const el = $("pay");
+  const write = v => el.innerHTML = "$"+v.toFixed(2) +
+    ` <small>on $${stake.toFixed(0)}</small>`;
+  if (reduceMotion || shownPay === null){ shownPay = target; write(target); return; }
+  const from = shownPay, t0 = performance.now();
+  cancelAnimationFrame(payAnim);
+  const tick = now => {
+    const k = Math.min(1, (now - t0) / 350), e = 1 - Math.pow(1-k, 3);
+    write(from + (target - from) * e);
+    if (k < 1) payAnim = requestAnimationFrame(tick);
+    else shownPay = target;
+  };
+  payAnim = requestAnimationFrame(tick);
+}
+
+function legRow(i, l, removable){
+  const color = l.team && TEAMCOLOR[l.team] ? TEAMCOLOR[l.team] : "var(--go)";
+  const action = removable
+    ? `<button class="rm" data-k="${key(l)}" aria-label="Remove leg">&times;</button>`
+    : `<a class="bet" target="_blank" rel="noopener" href="${slip([l])}">Bet</a>`;
+  return `<li class="leg" style="--tc:${color}">
+    <span class="num">${i}</span>
+    <span class="who"><span class="pick">${l.desc}</span><span class="sub">${l.sub}</span></span>
+    <span class="odds"><span class="pct">${pct(l.p)}</span><br><span class="fair">FD ${fd(l.odds)}</span></span>
+    ${action}
+    <span class="meter"><i style="width:${(l.p*100).toFixed(1)}%"></i></span>
+  </li>`;
+}
+
+function render(){
+  clamp();
+  $("legv").textContent = legs;
+  $("propv").textContent = props;
+  const isCustom = custom.size > 0;
+  const target = isCustom ? 0 : (parseFloat($("target").value) || 0);
+  $("custombar").hidden = !isCustom;
+  $("ctl-legs").classList.toggle("dim", isCustom);
+  $("ctl-target").classList.toggle("dim", isCustom);
+  $("ctl-props").classList.toggle("dim", isCustom || target > 0);
+
+  let ticketLegs = [], shortfall = false;
+  if (isCustom){
+    ticketLegs = [...custom.values()];
+  } else if (target > 0){
+    const t = buildTarget(target, legs);
+    if (t){ ticketLegs = t.legs; shortfall = !t.reachable; }
+    else shortfall = true;
+  } else {
+    ticketLegs = D.games.slice(0, legs - props).map(g => mlLeg(g, g.sides[0]))
+      .concat(D.props.slice(0, props).map(propLeg));
+  }
+  const combined = ticketLegs.reduce((a,l) => a*l.p, 1);
+  $("legs").innerHTML = ticketLegs.length
+    ? ticketLegs.map((l,i) => legRow(i+1, l, isCustom)).join("")
+    : `<li class="empty">Empty ticket — tap prices on the board below.</li>`;
+  document.querySelectorAll("#legs .rm").forEach(b =>
+    b.onclick = () => { custom.delete(b.dataset.k); render(); });
+  const t = $("ticket");
+  if (ticketLegs.length){ t.href = slip(ticketLegs); t.removeAttribute("aria-disabled"); }
+  else { t.removeAttribute("href"); t.setAttribute("aria-disabled", "true"); }
+
+  const stake = parseFloat($("stake").value) || 0;
+  const fdDec = ticketLegs.reduce((a,l) => a*dec(l.odds), 1);
+  $("comb").textContent = ticketLegs.length ? pct(combined) : "—";
+  $("fair").innerHTML = ticketLegs.length
+    ? "$"+(stake/combined).toFixed(2)+` <small>${am(combined)}</small>` : "—";
+  showPay(ticketLegs.length ? stake*fdDec : 0, stake);
+  if (isCustom){
+    const v = VERDICTS.find(v => combined >= v[0]);
+    $("vlabel").textContent = "Your ticket · " + v[1].toLowerCase();
+    $("vline").textContent = ticketLegs.length + " leg" + (ticketLegs.length>1?"s":"") + ", hand-picked";
+  } else if (target > 0 && shortfall){
+    $("vlabel").textContent = "Out of reach";
+    $("vline").textContent = `board tops out at ${pct(combined)} for ${legs} legs — this is the safest possible`;
+  } else if (target > 0){
+    $("vlabel").textContent = pct(target).replace(".0%","%")+" ticket";
+    $("vline").textContent = "alt lines traded for the best payout that stays over target";
+  } else {
+    const v = VERDICTS.find(v => combined >= v[0]);
+    $("vlabel").textContent = v[1];
+    $("vline").textContent = v[2];
+  }
+  $("pin").style.left = "calc(" + (100 - combined*100).toFixed(1) + "% - 2px)";
+  document.querySelectorAll("button.side").forEach(b =>
+    b.classList.toggle("on", custom.has(b.dataset.k)));
+}
+
+function toggleLeg(k){
+  if (custom.has(k)) custom.delete(k);
+  else custom.set(k, ALL_LEGS[k]);
+  render();
+}
+
+$("legup").onclick = () => { legs++; render(); };
+$("legdn").onclick = () => { legs--; render(); };
+$("propup").onclick = () => { props++; render(); };
+$("propdn").onclick = () => { props--; render(); };
+$("reset").onclick = () => { custom.clear(); render(); };
+$("target").addEventListener("change", render);
+$("stake").addEventListener("input", () => {
+  try { localStorage.setItem("stake", $("stake").value); } catch(e){}
+  render();
+});
+
+$("asof").textContent = "FanDuel board · lines as of " + D.generated;
+{
+  const day = D.games.length ? kick(D.games[0].start).split(" ")[0] : "";
+  const full = {Sun:"Sunday",Mon:"Monday",Tue:"Tuesday",Wed:"Wednesday",
+                Thu:"Thursday",Fri:"Friday",Sat:"Saturday"}[day] || day;
+  $("eyebrow").textContent = (full ? full + " · " : "") + "Week " + D.week;
+}
+
+if (D.scores && D.scores.length){
+  $("scorehead").hidden = false;
+  $("scorecard").hidden = false;
+  $("scores").innerHTML = D.scores.map(s => {
+    const cls = s.final ? "m fin" : "m";
+    return `<li><span class="tab"></span>
+      <span><span class="${cls}">${s.away} &middot; ${s.home}</span></span>
+      <span class="detail">${s.final ? "Final" : s.detail}</span></li>`;
+  }).join("");
+}
+
+$("slate").innerHTML = D.games.map(g => {
+  const fav = g.sides[0];
+  const btn = s => `<button class="side" data-k="${g.market}:${s.sel}">
+      ${s.team} ${fd(s.odds)}<small>${pct(s.p)}</small></button>`;
+  return `<li style="--tc:${TEAMCOLOR[fav.team] || "var(--edge)"}"><span class="tab"></span>
+    <span><span class="m">${g.matchup}</span><br><span class="t">${kick(g.start)}</span></span>
+    <span class="sides">${btn(g.sides[0])}${btn(g.sides[1])}</span></li>`;
+}).join("");
+
+$("propboard").innerHTML = D.props.map(c => {
+  const k = c.market+":"+c.sel;
+  return `<li style="--tc:var(--go)"><span class="tab"></span>
+    <span><span class="m">${c.player}</span><br>
+      <span class="t">${c.side} ${c.line} ${c.type} · ${c.matchup}</span></span>
+    <span class="sides"><button class="side" data-k="${k}">
+      ${c.side==="Over"?"O":"U"} ${c.line} ${fd(c.odds)}<small>${pct(c.p)}</small></button></span></li>`;
+}).join("");
+
+document.querySelectorAll("button.side").forEach(b =>
+  b.onclick = () => toggleLeg(b.dataset.k));
+render();
+</script>
