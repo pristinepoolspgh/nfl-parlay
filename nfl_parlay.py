@@ -68,6 +68,28 @@ def fetch_live(date=None):
         return json.load(r)
 
 
+def _ml_odds(side):
+    """Moneyline from ESPN's nested schema: {'close': {'odds': '-148'}, ...}.
+
+    Prefers the closing line, falls back to the opener. Returns a float
+    American price, or None if no usable number is posted.
+    """
+    if not side:
+        return None
+    for k in ("close", "open"):
+        odds = (side.get(k) or {}).get("odds")
+        if odds is None:
+            continue
+        s = str(odds).strip().lstrip("+").upper()
+        if s in ("EVEN", "EV"):
+            return 100.0
+        try:
+            return float(s)
+        except ValueError:
+            continue
+    return None
+
+
 def parse_espn(payload):
     """ESPN scoreboard JSON -> list of games with de-vigged win probs."""
     games = []
@@ -81,8 +103,14 @@ def parse_espn(payload):
 
         p_home = p_away = None
         for o in comp.get("odds", []):
+            # Older schema: flat numeric moneyLine on the team odds objects.
             hml = (o.get("homeTeamOdds") or {}).get("moneyLine")
             aml = (o.get("awayTeamOdds") or {}).get("moneyLine")
+            if hml is None or aml is None:
+                # Current schema: odds[].moneyline.home/away.close.odds
+                ml = o.get("moneyline") or {}
+                hml = _ml_odds(ml.get("home"))
+                aml = _ml_odds(ml.get("away"))
             if hml is not None and aml is not None:
                 p_home, p_away = devig(american_to_prob(hml),
                                        american_to_prob(aml))
