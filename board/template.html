@@ -452,11 +452,10 @@ function payLadders(n){
 }
 
 // Payout mode: the most likely ticket whose posted price reaches the
-// goal — walk down as cheaply as possible; the finishing move is the
-// smallest jump that clears it.
-function buildPayout(targetDec, n){
-  const ladders = payLadders(n);
-  if (!ladders.length) return null;
+// goal — walk down as cheaply as possible (the finishing move is the
+// smallest jump that clears it), growing beyond the requested legs
+// toward the whole board when the goal needs more.
+function payWalk(ladders, targetDec){
   const idx = ladders.map(l => l.rungs.length - 1);
   let curP = ladders.reduce((a,l,j) => a * l.rungs[idx[j]].p, 1);
   let curD = ladders.reduce((a,l,j) => a * dec(l.rungs[idx[j]].odds), 1);
@@ -486,6 +485,21 @@ function buildPayout(targetDec, n){
   }
   return {reachable: true, combined: curP, decOdds: curD,
           legs: legsOf(ladders, idx)};
+}
+
+function buildPayout(targetDec, n){
+  const total = Object.keys(D.alts).length;
+  if (!total) return null;
+  let best = null, fallback = null;
+  for (let k = Math.min(n, total); k <= total; k++){
+    const t = payWalk(payLadders(k), targetDec);
+    if (t.reachable){
+      if (!best || t.combined > best.combined) best = t;
+    } else if (!fallback || t.decOdds > fallback.decOdds){
+      fallback = t;
+    }
+  }
+  return best || fallback;
 }
 const legsOf = (ladders, idx) => ladders.map((l,j) => ({...l.rungs[idx[j]],
   sub: l.mu, team: (l.rungs[idx[j]].desc||"").split(" ")[0]}));
@@ -595,11 +609,13 @@ function render(){
     $("vline").textContent = ticketLegs.length + " leg" + (ticketLegs.length>1?"s":"") + ", hand-picked";
   } else if (payMode && shortfall){
     $("vlabel").textContent = "Out of range";
-    $("vline").textContent = `${legs} legs top out at ${decToAm(fdDec)} — add legs for longer odds`;
+    $("vline").textContent = `the whole board tops out at ${decToAm(fdDec)} — showing the longest build`;
   } else if (payMode){
     const v = VERDICTS.find(v => combined >= v[0]);
+    const grew = ticketLegs.length > legs
+      ? ` · grew to ${ticketLegs.length} legs` : "";
     $("vlabel").textContent = fd(pay) + " ticket · " + v[1].toLowerCase();
-    $("vline").textContent = `most likely build paying it — posted ${decToAm(fdDec)}`;
+    $("vline").textContent = `most likely build paying it — posted ${decToAm(fdDec)}${grew}`;
   } else if (target > 0 && shortfall){
     $("vlabel").textContent = "Out of reach";
     $("vline").textContent = `board tops out at ${pct(combined)} for ${legs} legs — this is the safest possible`;

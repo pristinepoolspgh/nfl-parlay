@@ -187,7 +187,7 @@ def build_snapshot():
     for eid, e in events.items():
         mu = e["matchup"]
         cands.extend(np.fetch_fd_props(eid, mu))
-        rungs = [a for a in np.fetch_fd_alts(eid, mu) if a["p"] >= 0.25]
+        rungs = [a for a in np.fetch_fd_alts(eid, mu) if a["p"] >= 0.02]
         g = next((x for x in games if x["matchup"] == mu), None)
         if g:
             for s in g["sides"]:

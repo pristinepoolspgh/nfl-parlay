@@ -902,41 +902,55 @@ def build_payout_ticket(events, target_dec, n_legs, favorites=None):
         rungs.sort(key=lambda a: a["p"])
         if rungs:
             per_game.append(rungs)
-    if len(per_game) < n_legs:
+    if not per_game:
         return None, 0.0, 0.0
     per_game.sort(key=lambda r: -r[-1]["p"])
-    chosen = per_game[:n_legs]
-    idx = [len(r) - 1 for r in chosen]
-    cur_p = prod(r[i]["p"] for r, i in zip(chosen, idx))
-    cur_dec = prod(fd_decimal(r[i]["odds"]) for r, i in zip(chosen, idx))
-    while cur_dec < target_dec:
-        # A move that clears the target ends the walk: take the one
-        # keeping the most probability (the smallest sufficient jump).
-        finisher, best = None, None
-        for j, rungs in enumerate(chosen):
-            i = idx[j]
-            for i2 in range(i):
-                q = fd_decimal(rungs[i2]["odds"]) / fd_decimal(rungs[i]["odds"])
-                if q <= 1:
-                    continue
-                r = rungs[i2]["p"] / rungs[i]["p"]
-                if cur_dec * q >= target_dec:
-                    if finisher is None or r > finisher[0]:
-                        finisher = (r, j, i2)
-                else:
-                    value = math.log(q) / max(-math.log(r), 1e-9)
-                    if best is None or value > best[0]:
-                        best = (value, j, i2)
-        move = finisher or best
-        if move is None:
-            return None, cur_p, cur_dec
-        _, j, i2 = move
-        cur_p *= chosen[j][i2]["p"] / chosen[j][idx[j]]["p"]
-        cur_dec *= (fd_decimal(chosen[j][i2]["odds"])
-                    / fd_decimal(chosen[j][idx[j]]["odds"]))
-        idx[j] = i2
-    picks = [r[i] for r, i in zip(chosen, idx)]
-    return picks, cur_p, cur_dec
+
+    def walk(chosen):
+        idx = [len(r) - 1 for r in chosen]
+        cur_p = prod(r[i]["p"] for r, i in zip(chosen, idx))
+        cur_dec = prod(fd_decimal(r[i]["odds"]) for r, i in zip(chosen, idx))
+        while cur_dec < target_dec:
+            # A move that clears the target ends the walk: take the one
+            # keeping the most probability (smallest sufficient jump).
+            finisher, best = None, None
+            for j, rungs in enumerate(chosen):
+                i = idx[j]
+                for i2 in range(i):
+                    q = (fd_decimal(rungs[i2]["odds"])
+                         / fd_decimal(rungs[i]["odds"]))
+                    if q <= 1:
+                        continue
+                    r = rungs[i2]["p"] / rungs[i]["p"]
+                    if cur_dec * q >= target_dec:
+                        if finisher is None or r > finisher[0]:
+                            finisher = (r, j, i2)
+                    else:
+                        value = math.log(q) / max(-math.log(r), 1e-9)
+                        if best is None or value > best[0]:
+                            best = (value, j, i2)
+            move = finisher or best
+            if move is None:
+                return None, cur_p, cur_dec
+            _, j, i2 = move
+            cur_p *= chosen[j][i2]["p"] / chosen[j][idx[j]]["p"]
+            cur_dec *= (fd_decimal(chosen[j][i2]["odds"])
+                        / fd_decimal(chosen[j][idx[j]]["odds"]))
+            idx[j] = i2
+        return [r[i] for r, i in zip(chosen, idx)], cur_p, cur_dec
+
+    # A big goal may need more legs than asked: grow toward the whole
+    # board and keep the reachable build with the best hit probability.
+    best_build, top_dec = None, 0.0
+    for n in range(min(n_legs, len(per_game)), len(per_game) + 1):
+        picks, cur_p, cur_dec = walk(per_game[:n])
+        top_dec = max(top_dec, cur_dec)
+        if picks is not None and (best_build is None
+                                  or cur_p > best_build[1]):
+            best_build = (picks, cur_p, cur_dec)
+    if best_build is None:
+        return None, 0.0, top_dec
+    return best_build
 
 
 def _dec_to_american(dec):
@@ -960,9 +974,10 @@ def cmd_parlay_fd(args):
         if picks is None:
             top = (_dec_to_american(cur_dec) if cur_dec > 1
                    else "nothing")
-            sys.exit(f"{args.legs} legs top out at {top} on today's "
-                     f"board — add --legs for longer odds.")
-        print(f"\nMOST LIKELY {args.legs}-LEG TICKET PAYING "
+            sys.exit(f"Even using every game on the board, today tops "
+                     f"out at {top} — {_fmt_am(args.pay)} isn't "
+                     f"buildable right now.")
+        print(f"\nMOST LIKELY {len(picks)}-LEG TICKET PAYING "
               f"{_fmt_am(args.pay)} OR BETTER")
         print("-" * 68)
         for i, p in enumerate(picks, 1):
