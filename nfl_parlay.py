@@ -25,7 +25,14 @@ import argparse
 import json
 import sys
 import urllib.request
+from datetime import datetime
 from itertools import combinations
+
+try:
+    from zoneinfo import ZoneInfo
+    _EASTERN = ZoneInfo("America/New_York")
+except Exception:  # no tzdata available — fall back to raw UTC
+    _EASTERN = None
 
 ESPN_URL = ("https://site.api.espn.com/apis/site/v2/sports/football/nfl/"
             "scoreboard")
@@ -66,6 +73,17 @@ def fetch_live(date=None):
     req = urllib.request.Request(url, headers={"User-Agent": "nfl-parlay-cli"})
     with urllib.request.urlopen(req, timeout=15) as r:
         return json.load(r)
+
+
+def _kickoff_et(iso):
+    """ESPN UTC timestamp ('2026-09-20T20:05Z') -> 'YYYY-MM-DD HH:MM' ET."""
+    try:
+        dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+    except ValueError:
+        return iso[:16].replace("T", " ")
+    if _EASTERN is None:
+        return dt.strftime("%Y-%m-%d %H:%M UTC")
+    return dt.astimezone(_EASTERN).strftime("%Y-%m-%d %H:%M")
 
 
 def _ml_odds(side):
@@ -119,7 +137,7 @@ def parse_espn(payload):
             continue  # no line posted yet
         games.append({"home": home, "away": away,
                       "p_home": p_home, "p_away": p_away,
-                      "start": ev.get("date", "")[:16].replace("T", " ")})
+                      "start": _kickoff_et(ev.get("date", ""))})
     return games
 
 
@@ -155,7 +173,7 @@ def cmd_slate(args):
     if not games:
         print("No upcoming games with posted lines found.")
         return
-    print(f"\n{'MATCHUP':<16}{'KICKOFF':<18}{'FAVORITE':<10}"
+    print(f"\n{'MATCHUP':<16}{'KICKOFF (ET)':<18}{'FAVORITE':<10}"
           f"{'WIN %':>7}{'FAIR ML':>9}")
     print("-" * 60)
     for g in sorted(games, key=lambda x: -max(x["p_home"], x["p_away"])):
