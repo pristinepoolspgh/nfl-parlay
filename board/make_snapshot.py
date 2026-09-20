@@ -187,13 +187,13 @@ def build_snapshot():
     for eid, e in events.items():
         mu = e["matchup"]
         cands.extend(np.fetch_fd_props(eid, mu))
-        rungs = [a for a in np.fetch_fd_alts(eid, mu) if a["p"] >= 0.60]
+        rungs = [a for a in np.fetch_fd_alts(eid, mu) if a["p"] >= 0.25]
         g = next((x for x in games if x["matchup"] == mu), None)
         if g:
-            f = g["sides"][0]
-            rungs.append({"desc": f["team"] + " ML", "p": f["p"],
-                          "odds": f["odds"], "market": g["market"],
-                          "sel": f["sel"], "matchup": mu})
+            for s in g["sides"]:
+                rungs.append({"desc": s["team"] + " ML", "p": s["p"],
+                              "odds": s["odds"], "market": g["market"],
+                              "sel": s["sel"], "matchup": mu})
         # Keep the pareto frontier: rising payout as probability falls.
         rungs.sort(key=lambda a: (-a["p"], -np.fd_decimal(a["odds"])))
         front, bestdec = [], 0

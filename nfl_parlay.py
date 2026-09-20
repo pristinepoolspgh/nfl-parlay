@@ -880,6 +880,71 @@ def _print_target_check(args, combined, n_props):
               f"(≈ {prob_to_american(per_leg)} each).")
 
 
+def build_payout_ticket(events, target_dec, n_legs, favorites=None):
+    """The most likely ticket that pays at least the target: start each
+    of the n safest games at its highest-probability rung, then trade
+    probability for payout as cheaply as possible until the posted
+    parlay price reaches the target.
+
+    Returns (picks, combined, reached_dec); picks is None when even
+    the longest rungs can't reach the target, with reached_dec then
+    the best posted price available at n legs.
+    """
+    ml = {f["matchup"]: f for f in favorites or []}
+    per_game = []
+    for eid, matchup in events.items():
+        rungs = fetch_fd_alts(eid, matchup)
+        if matchup in ml:
+            f = ml[matchup]
+            rungs.append({"desc": f"{f['team']} ML", "p": f["p"],
+                          "odds": f["odds"], "market": f["market"],
+                          "sel": f["sel"], "matchup": matchup})
+        rungs.sort(key=lambda a: a["p"])
+        if rungs:
+            per_game.append(rungs)
+    if len(per_game) < n_legs:
+        return None, 0.0, 0.0
+    per_game.sort(key=lambda r: -r[-1]["p"])
+    chosen = per_game[:n_legs]
+    idx = [len(r) - 1 for r in chosen]
+    cur_p = prod(r[i]["p"] for r, i in zip(chosen, idx))
+    cur_dec = prod(fd_decimal(r[i]["odds"]) for r, i in zip(chosen, idx))
+    while cur_dec < target_dec:
+        # A move that clears the target ends the walk: take the one
+        # keeping the most probability (the smallest sufficient jump).
+        finisher, best = None, None
+        for j, rungs in enumerate(chosen):
+            i = idx[j]
+            for i2 in range(i):
+                q = fd_decimal(rungs[i2]["odds"]) / fd_decimal(rungs[i]["odds"])
+                if q <= 1:
+                    continue
+                r = rungs[i2]["p"] / rungs[i]["p"]
+                if cur_dec * q >= target_dec:
+                    if finisher is None or r > finisher[0]:
+                        finisher = (r, j, i2)
+                else:
+                    value = math.log(q) / max(-math.log(r), 1e-9)
+                    if best is None or value > best[0]:
+                        best = (value, j, i2)
+        move = finisher or best
+        if move is None:
+            return None, cur_p, cur_dec
+        _, j, i2 = move
+        cur_p *= chosen[j][i2]["p"] / chosen[j][idx[j]]["p"]
+        cur_dec *= (fd_decimal(chosen[j][i2]["odds"])
+                    / fd_decimal(chosen[j][idx[j]]["odds"]))
+        idx[j] = i2
+    picks = [r[i] for r, i in zip(chosen, idx)]
+    return picks, cur_p, cur_dec
+
+
+def _dec_to_american(dec):
+    if dec >= 2:
+        return f"+{round((dec - 1) * 100)}"
+    return f"-{round(100 / (dec - 1))}"
+
+
 def cmd_parlay_fd(args):
     """Build the ticket from FanDuel's own board and emit one slip link."""
     try:
@@ -888,6 +953,33 @@ def cmd_parlay_fd(args):
         print(f"FanDuel unreachable ({e}) — falling back to ESPN/Bovada.",
               file=sys.stderr)
         return cmd_parlay(args, book="espn")
+    if getattr(args, "pay", None):
+        target_dec = fd_decimal(args.pay)
+        picks, cur_p, cur_dec = build_payout_ticket(events, target_dec,
+                                                    args.legs, favs)
+        if picks is None:
+            top = (_dec_to_american(cur_dec) if cur_dec > 1
+                   else "nothing")
+            sys.exit(f"{args.legs} legs top out at {top} on today's "
+                     f"board — add --legs for longer odds.")
+        print(f"\nMOST LIKELY {args.legs}-LEG TICKET PAYING "
+              f"{_fmt_am(args.pay)} OR BETTER")
+        print("-" * 68)
+        for i, p in enumerate(picks, 1):
+            print(f"  LEG {i}: {p['desc']:<16} ({p['matchup']:<12}) "
+                  f"{p['p']*100:5.1f}%  FD {_fmt_am(p['odds'])}")
+        print("-" * 68)
+        print(f"  HIT PROBABILITY : {cur_p*100:.1f}%  (fair price "
+              f"{prob_to_american(cur_p)})")
+        print(f"  FD PAYS         : {_dec_to_american(cur_dec)} — "
+              f"${args.stake:.0f} returns ${args.stake*cur_dec:.2f}")
+        print(f"\n  ONE-TAP TICKET:")
+        print(f"  {fd_ticket_url(picks)}")
+        print(f"\n  The price you asked for buys exactly this much "
+              f"chance — no more.\n  Estimates, not guarantees. "
+              f"Nothing here is betting advice.\n")
+        return
+
     n_props = args.props
     if not 0 <= n_props <= args.legs:
         sys.exit(f"--props must be between 0 and --legs ({args.legs}).")
@@ -1115,6 +1207,10 @@ def main():
                     help="fd (default): FanDuel board with a one-tap "
                          "bet-slip link; espn: ESPN/Bovada with "
                          "per-leg links")
+    pp.add_argument("--pay", type=int, default=None, metavar="+500",
+                    help="build the most likely ticket paying at least "
+                         "these American odds (e.g. 500 or -150); "
+                         "overrides the safest-ticket flow")
 
     pr = sub.add_parser("props", parents=[common],
                         help="list player prop lines for a team's next game")
