@@ -33,11 +33,12 @@ DATA SOURCES
   tool says so rather than inventing an edge.
 
 BET LINKS
-  In live mode the parlay prints a link per leg: moneyline links add
-  the pick straight to a DraftKings bet slip (the slip keeps earlier
-  picks as you tap each), and prop links open the game's Bovada board
-  where your side is one tap away. A single link that loads the whole
-  ticket requires a sportsbook partner/affiliate API.
+  By default the parlay builds from FanDuel's own board (moneylines
+  and player props, de-vigged from FanDuel's prices) and prints ONE
+  link that opens the FanDuel app with every leg already on the slip.
+  With --book espn, moneyline legs get per-leg DraftKings slip links
+  (the slip keeps earlier picks as you tap each) and prop legs open
+  the game's Bovada board.
 """
 
 import argparse
@@ -65,6 +66,16 @@ BOVADA_COUPON = ("https://www.bovada.lv/services/sports/event/coupon/events/"
                  "?marketFilterId=def&preMatchOnly=true&lang=en")
 BOVADA_EVENT = ("https://www.bovada.lv/services/sports/event/v2/events/"
                 "A/description{link}?lang=en")
+
+# FanDuel's public web API key, embedded in their own site's page source.
+FD_AK = "FhMFpcPWXMeyZxOx"
+FD_PAGE = ("https://sbapi.pa.sportsbook.fanduel.com/api/content-managed-page"
+           f"?page=CUSTOM&customPageId=nfl&pbHorizontal=false&_ak={FD_AK}"
+           "&timezone=America%2FNew_York")
+FD_EVENT = ("https://sbapi.pa.sportsbook.fanduel.com/api/event-page"
+            f"?_ak={FD_AK}" "&eventId={eid}&tab={tab}")
+FD_PROP_TABS = ("passing-props", "rushing-props", "receiving-props")
+FD_BETSLIP = "https://sportsbook.fanduel.com/addToBetslip"
 
 # ESPN-style abbreviations -> nicknames, for matching Bovada event names.
 TEAM_NICKNAMES = {
@@ -111,7 +122,11 @@ def devig(p_home, p_away):
 # ------------------------------------------------------------- data layer --
 
 def _get_json(url):
-    req = urllib.request.Request(url, headers={"User-Agent": "nfl-parlay-cli"})
+    # A browser-ish UA: some books' public endpoints reject unknown agents.
+    ua = ("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
+          "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 "
+          "Mobile/15E148 Safari/604.1")
+    req = urllib.request.Request(url, headers={"User-Agent": ua})
     with urllib.request.urlopen(req, timeout=15) as r:
         return json.load(r)
 
@@ -232,6 +247,109 @@ def best_prop_side(prop):
 
 def _fmt_am(x):
     return f"{int(x):+d}"
+
+
+# ------------------------------------- FanDuel (one-tap bet-slip links) --
+
+def _abbr(full_name):
+    """'Kansas City Chiefs' -> 'KC' via the nickname table."""
+    for ab, nick in TEAM_NICKNAMES.items():
+        if nick in full_name:
+            return ab
+    return full_name
+
+
+def _fd_odds(runner):
+    o = ((runner.get("winRunnerOdds") or {})
+         .get("americanDisplayOdds") or {}).get("americanOdds")
+    return None if o is None else float(o)
+
+
+def fetch_fd_board():
+    """FanDuel's NFL page -> pregame moneyline candidates with slip IDs.
+
+    Returns (events, favorites): events as {id: 'AWY @ HOM'}, favorites as
+    [{team, matchup, p, odds, market, sel}] best side per game, best first.
+    """
+    page = _get_json(FD_PAGE)
+    att = page.get("attachments", {})
+    now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+    events = {}
+    for eid, ev in att.get("events", {}).items():
+        name = ev.get("name", "")
+        if " @ " not in name:
+            continue  # futures/specials
+        if ev.get("openDate", "")[:19] <= now:
+            continue  # kicked off
+        away, home = name.split(" @ ", 1)
+        events[int(eid)] = f"{_abbr(away)} @ {_abbr(home)}"
+    favs = []
+    for m in att.get("markets", {}).values():
+        if (m.get("marketType") != "MONEY_LINE"
+                or m.get("marketStatus") != "OPEN"
+                or m.get("eventId") not in events):
+            continue
+        runners = [r for r in m.get("runners", [])
+                   if r.get("runnerStatus") == "ACTIVE"
+                   and _fd_odds(r) is not None]
+        if len(runners) != 2:
+            continue
+        pa, pb = devig(american_to_prob(_fd_odds(runners[0])),
+                       american_to_prob(_fd_odds(runners[1])))
+        r, p = (runners[0], pa) if pa >= pb else (runners[1], pb)
+        favs.append({"team": _abbr(r.get("runnerName", "?")),
+                     "matchup": events[m["eventId"]],
+                     "p": p, "odds": _fd_odds(r),
+                     "market": m["marketId"], "sel": r["selectionId"]})
+    favs.sort(key=lambda f: -f["p"])
+    return events, favs
+
+
+def fetch_fd_props(event_id, matchup):
+    """One event's main player O/U props with slip IDs and de-vigged probs."""
+    props = []
+    for tab in FD_PROP_TABS:
+        try:
+            page = _get_json(FD_EVENT.format(eid=event_id, tab=tab))
+        except Exception:
+            continue
+        for m in page.get("attachments", {}).get("markets", {}).values():
+            mtype = m.get("marketType", "")
+            if (not mtype.startswith("PLAYER_")
+                    or "_ALT_" in mtype
+                    or m.get("marketStatus") != "OPEN"
+                    or " - " not in m.get("marketName", "")):
+                continue
+            player, label = m["marketName"].split(" - ", 1)
+            over = under = None
+            for r in m.get("runners", []):
+                if r.get("runnerStatus") != "ACTIVE" or _fd_odds(r) is None:
+                    continue
+                if r.get("runnerName", "").endswith("Over"):
+                    over = r
+                elif r.get("runnerName", "").endswith("Under"):
+                    under = r
+            if not over or not under:
+                continue
+            po, pu = devig(american_to_prob(_fd_odds(over)),
+                           american_to_prob(_fd_odds(under)))
+            side, r, p = (("Over", over, po) if po >= pu
+                          else ("Under", under, pu))
+            props.append({"player": player, "type": label,
+                          "matchup": matchup, "side": side,
+                          "line": r.get("handicap"), "p": p,
+                          "odds": _fd_odds(r),
+                          "market": m["marketId"], "sel": r["selectionId"]})
+    return props
+
+
+def fd_ticket_url(legs):
+    """One FanDuel link that loads every leg onto the bet slip."""
+    parts = []
+    for i, l in enumerate(legs):
+        parts.append(f"marketId[{i}]={l['market']}"
+                     f"&selectionId[{i}]={l['sel']}")
+    return FD_BETSLIP + "?" + "&".join(parts)
 
 
 def _kickoff_et(iso):
@@ -617,7 +735,87 @@ def prop_leg_candidates(props):
     return sorted(by_player.values(), key=lambda c: -c["p"])
 
 
-def cmd_parlay(args):
+def _print_target_check(args, combined, n_props):
+    if not args.target:
+        return
+    per_leg = args.target ** (1.0 / args.legs)
+    print(f"\n  TARGET {args.target*100:.0f}% CHECK")
+    if combined >= args.target:
+        print(f"  ✓ This ticket clears your target.")
+    else:
+        board = "on this board" if n_props else "on moneylines today"
+        print(f"  ✗ Not reachable {board}. "
+              f"{args.target*100:.0f}% over {args.legs} legs needs "
+              f"~{per_leg*100:.1f}% per leg "
+              f"(≈ {prob_to_american(per_leg)} each).")
+
+
+def cmd_parlay_fd(args):
+    """Build the ticket from FanDuel's own board and emit one slip link."""
+    try:
+        events, favs = fetch_fd_board()
+    except Exception as e:
+        print(f"FanDuel unreachable ({e}) — falling back to ESPN/Bovada.",
+              file=sys.stderr)
+        return cmd_parlay(args, book="espn")
+    n_props = args.props
+    if not 0 <= n_props <= args.legs:
+        sys.exit(f"--props must be between 0 and --legs ({args.legs}).")
+    n_ml = args.legs - n_props
+    if len(favs) < n_ml:
+        sys.exit(f"Only {len(favs)} FanDuel games available — can't build "
+                 f"a parlay with {n_ml} moneyline legs.")
+
+    prop_legs = []
+    if n_props:
+        cands, seen = [], set()
+        for eid, matchup in events.items():
+            cands.extend(fetch_fd_props(eid, matchup))
+        cands.sort(key=lambda c: -c["p"])
+        for c in cands:
+            if c["player"] not in seen:
+                seen.add(c["player"])
+                prop_legs.append(c)
+        if len(prop_legs) < n_props:
+            sys.exit(f"Only {len(prop_legs)} priced FanDuel prop markets "
+                     f"found — can't fill {n_props} prop legs.")
+        prop_legs = prop_legs[:n_props]
+
+    ml_legs = favs[:n_ml]
+    combined = (prod(l["p"] for l in ml_legs)
+                * prod(c["p"] for c in prop_legs))
+    payout = args.stake / combined
+
+    label = "MONEYLINE" if not n_props else "MONEYLINE + PROPS"
+    print(f"\nSAFEST {args.legs}-LEG {label} PARLAY — FanDuel board "
+          f"({len(favs)} games)")
+    print("-" * 68)
+    i = 0
+    for i, l in enumerate(ml_legs, 1):
+        print(f"  LEG {i}: {l['team']:<5} ML  ({l['matchup']:<12}) "
+              f"{l['p']*100:5.1f}%  FD {_fmt_am(l['odds'])}")
+    for i, c in enumerate(prop_legs, i + 1):
+        side = "Ov" if c["side"] == "Over" else "Un"
+        desc = f"{c['player']} {side} {c['line']:g} {c['type']}"
+        print(f"  LEG {i}: {desc:<33} "
+              f"{c['p']*100:5.1f}%  FD {_fmt_am(c['odds'])}")
+    print("-" * 68)
+    print(f"  COMBINED HIT PROBABILITY : {combined*100:.1f}%")
+    print(f"  FAIR PARLAY PRICE        : {prob_to_american(combined)}"
+          f"  (FanDuel pays less after vig)")
+    print(f"  ${args.stake:.0f} RETURNS (fair)      : "
+          f"${payout:.2f}  (${payout - args.stake:.2f} profit)")
+    print(f"\n  ONE-TAP TICKET — opens the FanDuel app with every leg "
+          f"on the slip:")
+    print(f"  {fd_ticket_url(ml_legs + prop_legs)}")
+    print(f"\n  Probabilities are de-vigged from FanDuel's own prices. "
+          f"Legs are treated\n  as independent; FanDuel reprices "
+          f"same-game combos on the slip.")
+    _print_target_check(args, combined, n_props)
+    print("\n  Estimates, not guarantees. Nothing here is betting advice.\n")
+
+
+def cmd_parlay(args, book=None):
     games = load_games(args)
     n_props = args.props
     if not 0 <= n_props <= args.legs:
@@ -716,23 +914,7 @@ def cmd_parlay(args):
     elif args.demo:
         print(f"\n  Bet links appear in live mode.")
 
-    if args.target:
-        per_leg = args.target ** (1.0 / args.legs)
-        print(f"\n  TARGET {args.target*100:.0f}% CHECK")
-        if combined >= args.target:
-            print(f"  ✓ This ticket clears your target.")
-        else:
-            board = "on this board" if n_props else "on moneylines today"
-            print(f"  ✗ Not reachable {board}. "
-                  f"{args.target*100:.0f}% over {args.legs} legs needs "
-                  f"~{per_leg*100:.1f}% per leg "
-                  f"(≈ {prob_to_american(per_leg)} each).")
-            print(f"    That lives in alternate spreads (e.g. these same "
-                  f"teams at +13.5/+14.5), and a true "
-                  f"{args.target*100:.0f}% parlay pays about "
-                  f"{prob_to_american(args.target)} — "
-                  f"${args.stake:.0f} wins roughly "
-                  f"${args.stake*(1/args.target-1):.2f}.")
+    _print_target_check(args, combined, n_props)
     print("\n  Estimates, not guarantees. Nothing here is betting advice.\n")
 
 
@@ -772,6 +954,10 @@ def main():
                          "(default 0.90; 0 to skip the check)")
     pp.add_argument("--stake", type=float, default=10.0,
                     help="stake for payout math (default $10)")
+    pp.add_argument("--book", choices=["fd", "espn"], default="fd",
+                    help="fd (default): FanDuel board with a one-tap "
+                         "bet-slip link; espn: ESPN/Bovada with "
+                         "per-leg links")
 
     pr = sub.add_parser("props", parents=[common],
                         help="list player prop lines for a team's next game")
@@ -800,7 +986,10 @@ def main():
     else:
         if args.target == 0:
             args.target = None
-        cmd_parlay(args)
+        if args.book == "fd" and not args.demo:
+            cmd_parlay_fd(args)
+        else:
+            cmd_parlay(args)
 
 
 if __name__ == "__main__":

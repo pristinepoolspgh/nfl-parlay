@@ -58,13 +58,16 @@ notice; `--source espn` forces the fallback if they do.
 
 ## Bet links
 
-In live mode the parlay prints a **BET LINKS** section: each moneyline leg
-gets a DraftKings deep link (ESPN's own bet-slip links) that adds that pick
-to your DK slip — the slip keeps earlier picks, so tapping the legs in turn
-builds the ticket. Prop legs link to the game's Bovada board, where your
-side is one tap away. The `props` view also prints its game's "Bet this
-board" link. A single one-tap link for a whole multi-game ticket is a
-sportsbook partner-API feature (that's what pick-selling apps use) and
-isn't available from public data.
+By default (`--book fd`) the parlay is built from **FanDuel's own board** —
+moneylines and player props, probabilities de-vigged from FanDuel's posted
+prices — and the output ends with **one link that opens the FanDuel app
+with every leg already on the bet slip** (`addToBetslip`, the same deep-link
+mechanism pick-selling apps use). FanDuel reprices same-game combos once
+they're on the slip, so the slip's payout can differ from the fair math.
+
+`--book espn` keeps the ESPN/Bovada path: per-leg DraftKings slip links for
+moneylines (the DK slip keeps earlier picks as you tap each leg in turn) and
+Bovada board links for props. The `props` view also prints its game's "Bet
+this board" link.
 
 Estimates, not guarantees. Nothing here is betting advice.
