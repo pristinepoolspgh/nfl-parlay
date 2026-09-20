@@ -323,6 +323,9 @@ footer{color:var(--faint); font-size:12px; line-height:1.5}
   <h2>Props <small>&middot; strongest priced sides, one per player</small></h2>
   <section class="card"><ul class="rows" id="propboard"></ul></section>
 
+  <h2 id="readhead" hidden>The read <small>&middot; Claude&rsquo;s pregame judgment, graded like everything else</small></h2>
+  <section class="card" id="readcard" hidden><div class="book" id="read"></div></section>
+
   <h2 id="bookhead" hidden>The book so far <small>&middot; what the market said vs what happened</small></h2>
   <section class="card" id="bookcard" hidden><div class="book" id="book"></div></section>
 
@@ -597,7 +600,30 @@ if (_dbUse) _dbUse.then(db => {
   db.collection("tickets").orderBy("placed", "desc").limit(30)
     .onSnapshot(renderTickets, () => {});
   db.doc("meta/insights").onSnapshot(renderBook, () => {});
+  db.doc("meta/read").onSnapshot(renderRead, () => {});
 });
+
+function renderRead(snap){
+  const has = snap.exists;
+  $("readhead").hidden = !has;
+  $("readcard").hidden = !has;
+  if (!has) return;
+  const r = snap.data();
+  let html = `<div class="sum" style="color:var(--muted)">Week ${r.week}</div>`;
+  html += (r.notes || []).map(n =>
+    `<div class="sum">• ${n}</div>`).join("");
+  if ((r.leans || []).length){
+    html += `<ul class="upsets">` + r.leans.map(l => {
+      const cls = l.result === "won" ? "hot" : l.result === "lost" ? "cold" : "r";
+      const tag = l.result === "pending" ? "pending" : l.result;
+      return `<li><span><span class="who">${l.desc}</span>
+        <span class="r"> · ${l.matchup} · market ${(l.p_market*100).toFixed(0)}%</span><br>
+        <span class="r" style="font-size:12px">${l.why}</span></span>
+        <span class="sc ${cls}">${tag}</span></li>`;
+    }).join("") + `</ul>`;
+  }
+  $("read").innerHTML = html;
+}
 
 function renderBook(snap){
   const has = snap.exists;
@@ -626,6 +652,11 @@ function renderBook(snap){
       `<li><span><span class="who">${u.fav} fell</span>
         <span class="r"> · wk ${u.week} · was ${(u.p_fav*100).toFixed(0)}%</span></span>
         <span class="sc">${u.score}</span></li>`).join("") + `</ul>`;
+  }
+  if (b.leans && (b.leans.won + b.leans.lost + b.leans.pending) > 0){
+    html += `<div class="sum" style="margin-top:12px">Claude&rsquo;s leans:
+      <b>${b.leans.won}–${b.leans.lost}</b>${b.leans.pending ? ` (${b.leans.pending} pending)` : ""}
+      — judged by the same scoreboard as the market.</div>`;
   }
   $("book").innerHTML = html;
 }

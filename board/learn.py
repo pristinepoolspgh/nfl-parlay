@@ -25,9 +25,13 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE)
 import nfl_parlay as np
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import settle
+
 MEM = os.path.join(BASE, "memory")
 PREGAME = os.path.join(MEM, "pregame.jsonl")
 RESULTS = os.path.join(MEM, "results.jsonl")
+JUDGMENTS = os.path.join(MEM, "judgments.jsonl")
 INSIGHTS = os.path.join(MEM, "insights.json")
 
 BUCKETS = [(0.5, 0.6), (0.6, 0.7), (0.7, 0.8), (0.8, 0.9), (0.9, 1.01)]
@@ -105,6 +109,28 @@ def main():
     else:
         added = 0
 
+    # Grade any pending judgment leans with the same finals logic the
+    # tickets get — my reads face the same ruler as the market.
+    judgments = read_jsonl(JUDGMENTS)
+    pending_leans = [(j, l) for j in judgments
+                     for l in j.get("leans", [])
+                     if l.get("result") == "pending"]
+    leans_graded = 0
+    if pending_leans:
+        dates = {j["date"].replace("-", "") for j, _ in pending_leans}
+        extra = {(datetime.strptime(d, "%Y%m%d") + timedelta(days=1))
+                 .strftime("%Y%m%d") for d in dates}
+        jf = fetch_finals(dates | extra)
+        for _, lean in pending_leans:
+            verdict = settle.grade_leg(lean, jf)
+            if verdict:
+                lean["result"] = verdict
+                leans_graded += 1
+        if leans_graded:
+            with open(JUDGMENTS, "w") as f:
+                for j in judgments:
+                    f.write(json.dumps(j) + "\n")
+
     # Rebuild insights from the full results file.
     buckets = []
     for lo, hi in BUCKETS:
@@ -125,6 +151,9 @@ def main():
                f"{pred_all*100:.1f}%, they actually won "
                f"{act_all*100:.1f}%."
                if n_all else "No graded games yet.")
+    all_leans = [l for j in judgments for l in j.get("leans", [])]
+    lw = sum(1 for l in all_leans if l["result"] == "won")
+    ll = sum(1 for l in all_leans if l["result"] == "lost")
     insights = {
         "updated": datetime.utcnow().strftime("%Y-%m-%dT%H:%MZ"),
         "games": n_all,
@@ -135,9 +164,18 @@ def main():
         "upsets": [{"week": r["week"], "matchup": r["matchup"],
                     "fav": r["fav"], "p_fav": r["p_fav"],
                     "score": r["score"]} for r in upsets[:12]],
+        "leans": {"won": lw, "lost": ll,
+                  "pending": len(all_leans) - lw - ll,
+                  "recent": [{"week": j["week"], "desc": l["desc"],
+                              "matchup": l["matchup"],
+                              "p_market": l["p_market"],
+                              "result": l["result"]}
+                             for j in judgments[-4:]
+                             for l in j.get("leans", [])]},
     }
     json.dump(insights, open(INSIGHTS, "w"), indent=1)
-    print(f"{added} games graded this run; {n_all} in memory. {summary}")
+    print(f"{added} games + {leans_graded} leans graded this run; "
+          f"{n_all} games in memory; my leans {lw}-{ll}. {summary}")
 
 
 if __name__ == "__main__":
