@@ -28,6 +28,41 @@ def curl_json(url):
 np._get_json = curl_json
 
 
+INJ_URL = ("https://site.api.espn.com/apis/site/v2/sports/football/nfl/"
+           "injuries")
+POS_RANK = {"QB": 0, "RB": 1, "WR": 2, "TE": 3}
+
+
+def _norm_name(n):
+    toks = [t for t in n.lower().replace(".", "").split()
+            if t not in ("jr", "sr", "ii", "iii", "iv", "v")]
+    return " ".join(toks)
+
+
+def fetch_injuries():
+    """{team_abbr: [{name, pos, status}]} for Out/Doubtful/Questionable."""
+    by_team = {}
+    try:
+        d = curl_json(INJ_URL)
+    except Exception:
+        return by_team
+    for t in d.get("injuries", []):
+        rows = []
+        for inj in t.get("injuries", []):
+            st = inj.get("status")
+            if st not in ("Out", "Doubtful", "Questionable"):
+                continue
+            a = inj.get("athlete", {})
+            rows.append({"name": a.get("displayName", ""),
+                         "pos": (a.get("position") or {})
+                         .get("abbreviation", ""),
+                         "status": st})
+        rows.sort(key=lambda r: (POS_RANK.get(r["pos"], 9),
+                                 r["status"] != "Out"))
+        by_team[np._abbr(t.get("displayName", ""))] = rows
+    return by_team
+
+
 def build_snapshot():
     espn = curl_json(np.ESPN_URL)
     week = espn.get("week", {}).get("number")
@@ -113,6 +148,19 @@ def build_snapshot():
             seen.add(c["player"])
             c["p"] = round(c["p"], 5)
             props.append(c)
+
+    # Injury layer: attach key injuries per game, tag injured prop players.
+    inj_by_team = fetch_injuries()
+    status_by_name = {_norm_name(r["name"]): r["status"]
+                      for rows in inj_by_team.values() for r in rows}
+    for g in games:
+        away, home = g["matchup"].split(" @ ")
+        g["inj"] = {t: inj_by_team.get(t, [])[:4] for t in (away, home)
+                    if inj_by_team.get(t)}
+    for c in props:
+        st = status_by_name.get(_norm_name(c["player"]))
+        if st:
+            c["inj"] = st
 
     stamp = (datetime.now(np._EASTERN) if np._EASTERN
              else datetime.utcnow()).strftime("%b %d, %Y %I:%M %p ET")

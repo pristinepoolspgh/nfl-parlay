@@ -1,15 +1,15 @@
 {
- "updated": "2026-09-20T20:11Z",
- "games": 5,
- "predicted": 0.6866,
- "actual": 0.6,
- "summary": "5 favorites graded: market said 68.7%, they actually won 60.0%.",
+ "updated": "2026-09-20T20:22Z",
+ "games": 6,
+ "predicted": 0.6688,
+ "actual": 0.5,
+ "summary": "6 favorites graded: market said 66.9%, they actually won 50.0%.",
  "buckets": [
   {
    "range": "50-60%",
-   "n": 1,
-   "predicted": 0.563,
-   "actual": 1.0
+   "n": 2,
+   "predicted": 0.5715,
+   "actual": 0.5
   },
   {
    "range": "60-70%",
@@ -50,6 +50,13 @@
    "fav": "CHI",
    "p_fav": 0.661,
    "score": "MIN 9 - CHI 3"
+  },
+  {
+   "week": 2,
+   "matchup": "CIN @ HOU",
+   "fav": "HOU",
+   "p_fav": 0.58,
+   "score": "CIN 20 - HOU 6"
   }
  ],
  "leans": {
