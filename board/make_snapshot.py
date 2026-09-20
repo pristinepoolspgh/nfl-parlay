@@ -120,9 +120,41 @@ def build_snapshot():
             "props": props[:14], "alts": alts, "scores": scores}
 
 
+def log_pregame(snap):
+    """Append each game's pregame favorite line to memory/pregame.jsonl,
+    once per (kickoff date, matchup) — the raw material for calibration.
+    """
+    path = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "memory", "pregame.jsonl")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    seen = set()
+    if os.path.exists(path):
+        for line in open(path):
+            try:
+                r = json.loads(line)
+                seen.add((r["date"], r["matchup"]))
+            except Exception:
+                continue
+    added = 0
+    with open(path, "a") as f:
+        for g in snap["games"]:
+            date = g["start"][:10]
+            if (date, g["matchup"]) in seen:
+                continue
+            fav = g["sides"][0]
+            f.write(json.dumps({
+                "date": date, "week": snap["week"],
+                "matchup": g["matchup"], "fav": fav["team"],
+                "p_fav": fav["p"], "odds": fav["odds"],
+                "source": "fanduel"}) + "\n")
+            added += 1
+    return added
+
+
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else "parlay-board.html"
     snap = build_snapshot()
+    logged = log_pregame(snap)
     tpl_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             "template.html")
     tpl = open(tpl_path).read()
@@ -133,7 +165,7 @@ def main():
     print(f"{out}: {len(snap['games'])} games, {len(snap['props'])} props, "
           f"{sum(len(v) for v in snap['alts'].values())} alt rungs, "
           f"{len(snap['scores'])} scores, week {snap['week']}, "
-          f"as of {snap['generated']}")
+          f"{logged} new pregame lines logged, as of {snap['generated']}")
 
 
 if __name__ == "__main__":
