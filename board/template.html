@@ -77,6 +77,12 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   width:100%; border:0; background:none; color:var(--ink); padding:7px 4px;
   font:600 18px/1 "Barlow Condensed", sans-serif; font-variant-numeric:tabular-nums;
 }
+.step .payin{
+  flex:1; min-width:0; border:0; background:none; color:var(--ink);
+  text-align:center; padding:7px 2px;
+  font:600 18px/1 "Barlow Condensed", sans-serif; font-variant-numeric:tabular-nums;
+}
+#paysign{color:var(--go); font-size:19px}
 .custombar{
   display:flex; justify-content:space-between; align-items:center; gap:10px;
   padding:9px 14px; border-bottom:1px solid var(--edge);
@@ -288,7 +294,7 @@ footer{color:var(--faint); font-size:12px; line-height:1.5}
         </select>
       </div>
       <div class="ctl" id="ctl-pay"><label for="paygoal">Payout goal</label>
-        <div class="stakebox"><input id="paygoal" inputmode="numeric" placeholder="e.g. +500" style="padding-left:8px"></div>
+        <div class="step"><button id="paysign" aria-label="Toggle plus or minus">+</button><input id="paygoal" class="payin" inputmode="numeric" placeholder="500"></div>
       </div>
       <div class="ctl"><label for="stake">Riding on it</label>
         <div class="stakebox"><span>$</span><input id="stake" inputmode="decimal" value="10"></div>
@@ -484,10 +490,11 @@ function buildPayout(targetDec, n){
 const legsOf = (ladders, idx) => ladders.map((l,j) => ({...l.rungs[idx[j]],
   sub: l.mu, team: (l.rungs[idx[j]].desc||"").split(" ")[0]}));
 
+let paySign = 1;
 function parsePay(s){
-  const m = (s || "").trim().replace("−", "-").match(/^[+]?(-?\d{3,5})$/);
-  if (!m) return null;
-  const a = parseInt(m[1], 10);
+  const digits = (s || "").replace(/\D/g, "");
+  if (!digits) return null;
+  const a = paySign * parseInt(digits, 10);
   return Math.abs(a) < 100 ? null : a;
 }
 
@@ -622,6 +629,11 @@ $("propdn").onclick = () => { props--; render(); };
 $("reset").onclick = () => { custom.clear(); render(); };
 $("target").addEventListener("change", render);
 $("paygoal").addEventListener("input", render);
+$("paysign").onclick = () => {
+  paySign = -paySign;
+  $("paysign").textContent = paySign > 0 ? "+" : "−";
+  render();
+};
 $("stake").addEventListener("input", () => {
   try { localStorage.setItem("stake", $("stake").value); } catch(e){}
   render();
