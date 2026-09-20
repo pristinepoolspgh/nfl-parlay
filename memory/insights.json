@@ -1,15 +1,15 @@
 {
- "updated": "2026-09-20T21:10Z",
- "games": 7,
- "predicted": 0.6604,
- "actual": 0.5714,
- "summary": "7 favorites graded: market said 66.0%, they actually won 57.1%.",
+ "updated": "2026-09-20T23:12Z",
+ "games": 10,
+ "predicted": 0.6702,
+ "actual": 0.5,
+ "summary": "10 favorites graded: market said 67.0%, they actually won 50.0%.",
  "buckets": [
   {
    "range": "50-60%",
-   "n": 2,
-   "predicted": 0.5715,
-   "actual": 0.5
+   "n": 3,
+   "predicted": 0.5712,
+   "actual": 0.6667
   },
   {
    "range": "60-70%",
@@ -19,9 +19,9 @@
   },
   {
    "range": "70-80%",
-   "n": 2,
-   "predicted": 0.768,
-   "actual": 0.5
+   "n": 4,
+   "predicted": 0.7612,
+   "actual": 0.25
   },
   {
    "range": "80-90%",
@@ -39,10 +39,24 @@
  "upsets": [
   {
    "week": 2,
+   "matchup": "CLE @ TB",
+   "fav": "TB",
+   "p_fav": 0.783,
+   "score": "CLE 23 - TB 19"
+  },
+  {
+   "week": 2,
    "matchup": "NO @ BAL",
    "fav": "BAL",
    "p_fav": 0.778,
    "score": "NO 24 - BAL 17"
+  },
+  {
+   "week": 2,
+   "matchup": "LV @ LAC",
+   "fav": "LAC",
+   "p_fav": 0.72575,
+   "score": "LV 26 - LAC 14"
   },
   {
    "week": 2,
