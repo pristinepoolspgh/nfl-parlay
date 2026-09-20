@@ -1,9 +1,9 @@
 {
- "updated": "2026-09-20T20:22Z",
- "games": 6,
- "predicted": 0.6688,
- "actual": 0.5,
- "summary": "6 favorites graded: market said 66.9%, they actually won 50.0%.",
+ "updated": "2026-09-20T21:10Z",
+ "games": 7,
+ "predicted": 0.6604,
+ "actual": 0.5714,
+ "summary": "7 favorites graded: market said 66.0%, they actually won 57.1%.",
  "buckets": [
   {
    "range": "50-60%",
@@ -13,9 +13,9 @@
   },
   {
    "range": "60-70%",
-   "n": 2,
-   "predicted": 0.667,
-   "actual": 0.5
+   "n": 3,
+   "predicted": 0.648,
+   "actual": 0.6667
   },
   {
    "range": "70-80%",
