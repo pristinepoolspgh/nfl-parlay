@@ -31,12 +31,20 @@ DATA SOURCES
   Bovada is unreachable, props fall back to ESPN, which publishes only
   the lines — a prop at the market line is ~50/50 either side, and the
   tool says so rather than inventing an edge.
+
+BET LINKS
+  In live mode the parlay prints a link per leg: moneyline links add
+  the pick straight to a DraftKings bet slip (the slip keeps earlier
+  picks as you tap each), and prop links open the game's Bovada board
+  where your side is one tap away. A single link that loads the whole
+  ticket requires a sportsbook partner/affiliate API.
 """
 
 import argparse
 import json
 import re
 import sys
+import urllib.parse
 import urllib.request
 from datetime import datetime
 from itertools import combinations
@@ -148,10 +156,10 @@ def fetch_bovada_events():
 _BOVADA_PLAYER = re.compile(r"^(.+?) - (.+?) \((\w{2,3})\)$")
 
 
-def parse_bovada_props(payload):
+def parse_bovada_props(payload, url=None):
     """Bovada event JSON -> player O/U props with priced lines.
 
-    Each prop: {player, team, type, matchup,
+    Each prop: {player, team, type, matchup, url,
                 lines: [{line, over, under}, ...]}  (American prices)
     """
     ev = payload[0]["events"][0]
@@ -181,12 +189,14 @@ def parse_bovada_props(payload):
                      if "O" in v and "U" in v]
             if lines:
                 props.append({"player": player, "team": team, "type": ptype,
-                              "matchup": matchup, "lines": lines})
+                              "matchup": matchup, "url": url,
+                              "lines": lines})
     return props
 
 
 def fetch_bovada_props(link):
-    return parse_bovada_props(_get_json(BOVADA_EVENT.format(link=link)))
+    return parse_bovada_props(_get_json(BOVADA_EVENT.format(link=link)),
+                              url="https://www.bovada.lv/sports" + link)
 
 
 def _match_bovada_event(events, team):
@@ -235,6 +245,20 @@ def _kickoff_et(iso):
     return dt.astimezone(_EASTERN).strftime("%Y-%m-%d %H:%M")
 
 
+def _dk_link(side):
+    """DraftKings bet-slip deep link from an ESPN moneyline side, if any.
+
+    ESPN wraps it in a tracking gateway URL; the clean event link rides
+    in the 'preurl' parameter.
+    """
+    href = (((side or {}).get("close") or {}).get("link") or {}).get("href", "")
+    if "preurl=" not in href:
+        return None
+    raw = href.split("preurl=", 1)[1].split("&", 1)[0]
+    url = urllib.parse.unquote(raw)
+    return url if url.startswith("https://sportsbook.draftkings.com/") else None
+
+
 def _ml_odds(side):
     """Moneyline from ESPN's nested schema: {'close': {'odds': '-148'}, ...}.
 
@@ -269,23 +293,27 @@ def parse_espn(payload):
         away = teams.get("away", {}).get("team", {}).get("abbreviation", "?")
 
         p_home = p_away = None
+        dk_home = dk_away = None
         for o in comp.get("odds", []):
+            ml = o.get("moneyline") or {}
             # Older schema: flat numeric moneyLine on the team odds objects.
             hml = (o.get("homeTeamOdds") or {}).get("moneyLine")
             aml = (o.get("awayTeamOdds") or {}).get("moneyLine")
             if hml is None or aml is None:
                 # Current schema: odds[].moneyline.home/away.close.odds
-                ml = o.get("moneyline") or {}
                 hml = _ml_odds(ml.get("home"))
                 aml = _ml_odds(ml.get("away"))
             if hml is not None and aml is not None:
                 p_home, p_away = devig(american_to_prob(hml),
                                        american_to_prob(aml))
+                dk_home = _dk_link(ml.get("home"))
+                dk_away = _dk_link(ml.get("away"))
                 break
         if p_home is None:
             continue  # no line posted yet
         games.append({"home": home, "away": away,
                       "p_home": p_home, "p_away": p_away,
+                      "dk_home": dk_home, "dk_away": dk_away,
                       "start": _kickoff_et(ev.get("date", ""))})
     return games
 
@@ -464,7 +492,11 @@ def _print_priced_props(matchup, props, total, show_alts):
             first = False
     print("\nPrices from Bovada, probabilities de-vigged (each line's two"
           "\nsides sum to 100%). The posted price is what the book pays;"
-          "\nthe fair price for that probability is always better.\n")
+          "\nthe fair price for that probability is always better.")
+    url = next((p.get("url") for p in props if p.get("url")), None)
+    if url:
+        print(f"Bet this board: {url}")
+    print()
 
 
 def _cmd_props_espn(args):
@@ -581,7 +613,7 @@ def prop_leg_candidates(props):
             by_player[pr["player"]] = {
                 "player": pr["player"], "team": pr["team"],
                 "type": pr["type"], "side": side,
-                "line": ln["line"], "p": p}
+                "line": ln["line"], "p": p, "url": pr.get("url")}
     return sorted(by_player.values(), key=lambda c: -c["p"])
 
 
@@ -622,16 +654,19 @@ def cmd_parlay(args):
     legs = []
     for g in games:
         if g["p_home"] >= g["p_away"]:
-            legs.append((g["home"], f"{g['away']} @ {g['home']}", g["p_home"]))
+            fav, p, url = g["home"], g["p_home"], g.get("dk_home")
         else:
-            legs.append((g["away"], f"{g['away']} @ {g['home']}", g["p_away"]))
+            fav, p, url = g["away"], g["p_away"], g.get("dk_away")
+        legs.append({"team": fav, "matchup": f"{g['away']} @ {g['home']}",
+                     "p": p, "url": url})
 
     # Safest combo of moneyline legs = the highest-probability favorites.
     best = ()
     if n_ml:
         best = max(combinations(legs, n_ml),
-                   key=lambda c: prod(p for *_ , p in c))
-    combined = (prod(p for *_, p in best)
+                   key=lambda c: prod(l["p"] for l in c))
+    best = sorted(best, key=lambda l: -l["p"])
+    combined = (prod(l["p"] for l in best)
                 * prod(c["p"] for c in prop_legs))
     fair_dec = 1.0 / combined
     payout = args.stake * fair_dec
@@ -641,10 +676,9 @@ def cmd_parlay(args):
           f"({len(games)} games on the board)")
     print("-" * 68)
     n = 0
-    for n, (team, matchup, p) in enumerate(
-            sorted(best, key=lambda x: -x[2]), 1):
-        print(f"  LEG {n}: {team:<5} ML  ({matchup:<21}) "
-              f"{p*100:5.1f}%  fair {prob_to_american(p)}")
+    for n, l in enumerate(best, 1):
+        print(f"  LEG {n}: {l['team']:<5} ML  ({l['matchup']:<21}) "
+              f"{l['p']*100:5.1f}%  fair {prob_to_american(l['p'])}")
     for i, c in enumerate(prop_legs, n + 1):
         side = "Ov" if c["side"] == "Over" else "Un"
         desc = (f"{c['player']} ({c['team']}) {side} {c['line']:g} "
@@ -663,6 +697,24 @@ def cmd_parlay(args):
               f"\n  (alternate lines included), de-vigged like everything"
               f"\n  else. Legs are treated as independent: books price"
               f"\n  same-game combos differently and may bar some entirely.")
+
+    if any(l["url"] for l in best) or any(c["url"] for c in prop_legs):
+        print(f"\n  BET LINKS")
+        if any(l["url"] for l in best):
+            print(f"  DraftKings keeps your slip as you tap each leg in turn:")
+            for l in best:
+                print(f"    {l['team']:<4} ML  {l['url'] or '(no link posted)'}")
+        if any(c["url"] for c in prop_legs):
+            print(f"  Prop links open the game's Bovada board — "
+                  f"tap your side there:")
+            for c in prop_legs:
+                if c["url"]:
+                    print(f"    {c['player']} {c['side']} {c['line']:g}  "
+                          f"{c['url']}")
+        print(f"  (One tap for a whole cross-book ticket isn't possible "
+              f"without a book's partner API.)")
+    elif args.demo:
+        print(f"\n  Bet links appear in live mode.")
 
     if args.target:
         per_leg = args.target ** (1.0 / args.legs)
