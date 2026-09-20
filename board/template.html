@@ -265,6 +265,24 @@ button.side.on small{color:var(--go-ink)}
 .upsets .who{font-weight:600}
 .upsets .sc{color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap}
 footer{color:var(--faint); font-size:12px; line-height:1.5}
+.sendbar{
+  position:fixed; left:0; right:0; bottom:0; z-index:20;
+  background:var(--card); border-top:1px solid var(--edge);
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  box-shadow:0 -6px 18px rgba(0,0,0,.25);
+}
+.sendbar .inner{
+  max-width:460px; margin:0 auto; display:flex; align-items:center; gap:12px;
+}
+.sendbar .sum{
+  flex:1; min-width:0; color:var(--muted); font-size:12.5px; line-height:1.35;
+}
+.sendbar .sum b{
+  display:block; color:var(--ink);
+  font:700 17px/1.2 "Barlow Condensed", sans-serif; font-variant-numeric:tabular-nums;
+}
+a.ticket.send{flex:0 0 auto; padding:13px 22px; font-size:15px}
+body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
 @media (max-width:400px){
   .controls .ctl:last-child{grid-column:1 / -1}
 }
@@ -358,6 +376,13 @@ footer{color:var(--faint); font-size:12px; line-height:1.5}
   100%), not predictions. Fair figures exclude the book’s vig; FanDuel reprices
   same-game combos on the slip. Lines move; check the slip before betting.
   Nothing here is betting advice.</footer>
+</div>
+
+<div class="sendbar" id="sendbar" hidden>
+  <div class="inner">
+    <span class="sum" id="sendsum"></span>
+    <a class="ticket send" id="sendbtn" target="_blank" rel="noopener">Bet on FanDuel</a>
+  </div>
 </div>
 
 <script>
@@ -647,6 +672,17 @@ function render(){
   $("pin").style.left = "calc(" + (100 - combined*100).toFixed(1) + "% - 2px)";
   document.querySelectorAll("button.side").forEach(b =>
     b.classList.toggle("on", custom.has(b.dataset.k)));
+
+  const showSend = isCustom && ticketLegs.length > 0;
+  $("sendbar").hidden = !showSend;
+  document.body.classList.toggle("hassend", showSend);
+  if (showSend){
+    $("sendsum").innerHTML =
+      `<b>${ticketLegs.length} leg${ticketLegs.length > 1 ? "s" : ""} · ` +
+      `${pct(combined)} · $${(stake*fdDec).toFixed(2)}</b>` +
+      `on $${stake.toFixed(0)} · tap picks to add more`;
+    $("sendbtn").href = slip(ticketLegs);
+  }
 }
 
 function toggleLeg(k){
