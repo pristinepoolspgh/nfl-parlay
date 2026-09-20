@@ -183,6 +183,48 @@ def build_snapshot():
                       "market": m["marketId"], "sides": sides})
     games.sort(key=lambda g: -g["sides"][0]["p"])
 
+    # Live in-play markets (ML / spread / total) for started games.
+    started = {}
+    for eid, ev in att["events"].items():
+        name = ev.get("name", "")
+        if " @ " in name and ev.get("openDate", "")[:19] <= now:
+            away, home = name.split(" @ ", 1)
+            started[int(eid)] = f"{np._abbr(away)} @ {np._abbr(home)}"
+    final_mus = {s["matchup"] for s in scores if s["final"]}
+    korder = {"ml": 0, "spread": 1, "total": 2}
+    live = {}
+    for m in att["markets"].values():
+        mu = started.get(m.get("eventId"))
+        if (not mu or mu in final_mus
+                or m.get("marketStatus") != "OPEN"
+                or m.get("marketType") not in
+                ("MONEY_LINE", "MATCH_HANDICAP_(2-WAY)",
+                 "TOTAL_POINTS_(OVER/UNDER)")):
+            continue
+        rs = [r for r in m.get("runners", [])
+              if r.get("runnerStatus") == "ACTIVE"
+              and np._fd_odds(r) is not None]
+        if len(rs) != 2:
+            continue
+        pa, pb = np.devig(np.american_to_prob(np._fd_odds(rs[0])),
+                          np.american_to_prob(np._fd_odds(rs[1])))
+        for r, p in ((rs[0], pa), (rs[1], pb)):
+            nm, h = r.get("runnerName", ""), float(r.get("handicap") or 0)
+            mt = m["marketType"]
+            if mt == "MONEY_LINE":
+                desc, kind = f"{np._abbr(nm)} ML", "ml"
+            elif mt == "MATCH_HANDICAP_(2-WAY)":
+                desc, kind = f"{np._abbr(nm)} {h:+g}", "spread"
+            else:
+                side = "Over" if nm.startswith("Over") else "Under"
+                desc, kind = f"{side} {abs(h):g} pts", "total"
+            live.setdefault(mu, []).append(
+                {"desc": desc, "kind": kind, "p": round(p, 5),
+                 "odds": np._fd_odds(r), "market": m["marketId"],
+                 "sel": r["selectionId"]})
+    for mu in live:
+        live[mu].sort(key=lambda b: korder[b["kind"]])
+
     cands, seen, props, alts = [], set(), [], {}
     for eid, e in events.items():
         mu = e["matchup"]
@@ -232,7 +274,8 @@ def build_snapshot():
     stamp = (datetime.now(np._EASTERN) if np._EASTERN
              else datetime.utcnow()).strftime("%b %d, %Y %I:%M %p ET")
     return {"generated": stamp, "week": week, "games": games,
-            "props": props[:14], "alts": alts, "scores": scores}
+            "props": props[:14], "alts": alts, "scores": scores,
+            "live": live}
 
 
 def log_pregame(snap):

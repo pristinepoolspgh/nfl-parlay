@@ -213,6 +213,9 @@ button.side.on small{color:var(--go-ink)}
 .scorebox .m{font-variant-numeric:tabular-nums}
 .scorebox .fin{color:var(--faint)}
 .scorebox .detail{color:var(--muted); font-size:12.5px; text-align:right; font-variant-numeric:tabular-nums}
+.livebets{display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-top:8px}
+.livebets .side{padding:7px 4px; font-size:12.5px}
+.scorebox .note{border-top:1px solid var(--edge)}
 .savebar{padding:0 14px 12px; display:flex; gap:8px; align-items:center}
 .savebar button{
   flex:1; border:1px dashed var(--edge); background:none; color:var(--muted);
@@ -332,8 +335,12 @@ footer{color:var(--faint); font-size:12px; line-height:1.5}
   <h2 id="tkhead" hidden>My tickets <small class="record" id="record"></small></h2>
   <section class="card" id="tkcard" hidden><div id="tickets"></div></section>
 
-  <h2 id="scorehead" hidden>On the field</h2>
-  <section class="card scorebox" id="scorecard" hidden><ul class="rows" id="scores"></ul></section>
+  <h2 id="scorehead" hidden>On the field <small>&middot; tap a live price to bet in-game</small></h2>
+  <section class="card scorebox" id="scorecard" hidden><ul class="rows" id="scores"></ul>
+    <div class="note" id="livenote" hidden>Live lines move every play and suspend
+    mid-snap; these prices are from the last refresh, and the FanDuel slip shows
+    the current price when it opens — check it before you fire.</div>
+  </section>
 
   <h2>The board <small>&middot; tap a price to build your own</small></h2>
   <section class="card"><ul class="rows" id="slate"></ul></section>
@@ -666,12 +673,26 @@ $("asof").textContent = "FanDuel board · lines as of " + D.generated;
 if (D.scores && D.scores.length){
   $("scorehead").hidden = false;
   $("scorecard").hidden = false;
+  let anyLive = false;
   $("scores").innerHTML = D.scores.map(s => {
     const cls = s.final ? "m fin" : "m";
+    const bets = (!s.final && D.live && D.live[s.matchup]) || [];
+    let betsHtml = "";
+    if (bets.length){
+      anyLive = true;
+      betsHtml = `<div class="livebets">` + bets.map(b => {
+        const k = b.market + ":" + b.sel;
+        ALL_LEGS[k] = {desc: b.desc, team: b.desc.split(" ")[0], p: b.p,
+                       odds: b.odds, market: b.market, sel: b.sel,
+                       sub: s.matchup + " · LIVE " + s.detail};
+        return `<button class="side" data-k="${k}">${b.desc} ${fd(b.odds)}<small>${pct(b.p)}</small></button>`;
+      }).join("") + `</div>`;
+    }
     return `<li><span class="tab"></span>
-      <span><span class="${cls}">${s.away} &middot; ${s.home}</span></span>
+      <span><span class="${cls}">${s.away} &middot; ${s.home}</span>${betsHtml}</span>
       <span class="detail">${s.final ? "Final" : s.detail}</span></li>`;
   }).join("");
+  $("livenote").hidden = !anyLive;
 }
 
 function wxLine(g){
