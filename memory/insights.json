@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-21T14:10Z",
+ "updated": "2026-09-21T23:06Z",
  "games": 14,
  "predicted": 0.6855,
  "actual": 0.6429,
@@ -76,7 +76,7 @@
  "leans": {
   "won": 1,
   "lost": 1,
-  "pending": 0,
+  "pending": 1,
   "recent": [
    {
     "week": 2,
@@ -91,6 +91,13 @@
     "matchup": "IND @ KC",
     "p_market": 0.481,
     "result": "lost"
+   },
+   {
+    "week": 2,
+    "desc": "NYG +7.5",
+    "matchup": "NYG @ LAR",
+    "p_market": 0.543,
+    "result": "pending"
    }
   ]
  }
