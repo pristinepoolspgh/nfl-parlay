@@ -8,3 +8,7 @@
 {"date": "2026-09-20", "week": 2, "matchup": "CLE @ TB", "fav": "TB", "p_fav": 0.783, "odds": -361, "source": "espn-pregame", "fav_won": false, "upset": true, "score": "CLE 23 - TB 19"}
 {"date": "2026-09-20", "week": 2, "matchup": "LV @ LAC", "fav": "LAC", "p_fav": 0.72575, "odds": -310.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "LV 26 - LAC 14"}
 {"date": "2026-09-20", "week": 2, "matchup": "JAX @ DEN", "fav": "DEN", "p_fav": 0.57071, "odds": -146.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "JAX 13 - DEN 20"}
+{"date": "2026-09-20", "week": 2, "matchup": "MIA @ SF", "fav": "SF", "p_fav": 0.87356, "odds": -1000.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "MIA 13 - SF 35"}
+{"date": "2026-09-20", "week": 2, "matchup": "IND @ KC", "fav": "KC", "p_fav": 0.71355, "odds": -290.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "IND 30 - KC 33"}
+{"date": "2026-09-20", "week": 2, "matchup": "WSH @ DAL", "fav": "DAL", "p_fav": 0.65649, "odds": -215.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "WSH 20 - DAL 37"}
+{"date": "2026-09-20", "week": 2, "matchup": "SEA @ ARI", "fav": "SEA", "p_fav": 0.65153, "odds": -210.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "SEA 31 - ARI 7"}

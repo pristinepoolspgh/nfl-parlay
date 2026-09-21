@@ -1,9 +1,9 @@
 {
- "updated": "2026-09-20T23:12Z",
- "games": 10,
- "predicted": 0.6702,
- "actual": 0.5,
- "summary": "10 favorites graded: market said 67.0%, they actually won 50.0%.",
+ "updated": "2026-09-21T14:10Z",
+ "games": 14,
+ "predicted": 0.6855,
+ "actual": 0.6429,
+ "summary": "14 favorites graded: market said 68.6%, they actually won 64.3%.",
  "buckets": [
   {
    "range": "50-60%",
@@ -13,21 +13,21 @@
   },
   {
    "range": "60-70%",
-   "n": 3,
-   "predicted": 0.648,
-   "actual": 0.6667
+   "n": 5,
+   "predicted": 0.6504,
+   "actual": 0.8
   },
   {
    "range": "70-80%",
-   "n": 4,
-   "predicted": 0.7612,
-   "actual": 0.25
+   "n": 5,
+   "predicted": 0.7517,
+   "actual": 0.4
   },
   {
    "range": "80-90%",
-   "n": 0,
-   "predicted": null,
-   "actual": null
+   "n": 1,
+   "predicted": 0.8736,
+   "actual": 1.0
   },
   {
    "range": "90-100%",
@@ -74,23 +74,23 @@
   }
  ],
  "leans": {
-  "won": 0,
-  "lost": 0,
-  "pending": 2,
+  "won": 1,
+  "lost": 1,
+  "pending": 0,
   "recent": [
    {
     "week": 2,
     "desc": "Under 44.5 pts",
     "matchup": "SEA @ ARI",
     "p_market": 0.613,
-    "result": "pending"
+    "result": "won"
    },
    {
     "week": 2,
     "desc": "KC -6.5",
     "matchup": "IND @ KC",
     "p_market": 0.481,
-    "result": "pending"
+    "result": "lost"
    }
   ]
  }
