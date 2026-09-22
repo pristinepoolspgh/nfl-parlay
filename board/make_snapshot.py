@@ -255,6 +255,39 @@ def build_snapshot():
             c["p"] = round(c["p"], 5)
             props.append(c)
 
+    # Model layer: attach Elo win probability for each game's favorite.
+    elo_path = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "memory", "elo.json")
+    if os.path.exists(elo_path):
+        ratings = json.load(open(elo_path)).get("ratings", {})
+        for g in games:
+            away, home = g["matchup"].split(" @ ")
+            ra = ratings.get(home, 1500.0) + 48.0
+            ph = 1.0 / (1.0 + 10 ** (-(ra - ratings.get(away, 1500.0)) / 400.0))
+            fav = g["sides"][0]["team"]
+            g["ep"] = round(ph if fav == home else 1.0 - ph, 4)
+
+    # Closing-line log: keep the latest pregame sighting per game (CLV).
+    close_path = os.path.join(os.path.dirname(elo_path), "close.jsonl")
+    closes = {}
+    if os.path.exists(close_path):
+        for line in open(close_path):
+            try:
+                r = json.loads(line)
+                closes[(r["date"], r["matchup"])] = r
+            except Exception:
+                continue
+    stamp_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%MZ")
+    for g in games:
+        fav = g["sides"][0]
+        closes[(g["start"][:10], g["matchup"])] = {
+            "date": g["start"][:10], "matchup": g["matchup"],
+            "fav": fav["team"], "p_fav": fav["p"], "odds": fav["odds"],
+            "seen": stamp_utc}
+    with open(close_path, "w") as f:
+        for r in closes.values():
+            f.write(json.dumps(r) + "\n")
+
     # Injury layer: attach key injuries per game, tag injured prop players.
     inj_by_team = fetch_injuries()
     status_by_name = {_norm_name(r["name"]): r["status"]
