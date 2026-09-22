@@ -1,9 +1,9 @@
 {
- "updated": "2026-09-21T23:06Z",
- "games": 14,
- "predicted": 0.6855,
- "actual": 0.6429,
- "summary": "14 favorites graded: market said 68.6%, they actually won 64.3%.",
+ "updated": "2026-09-22T21:02Z",
+ "games": 15,
+ "predicted": 0.6882,
+ "actual": 0.6667,
+ "summary": "15 favorites graded: market said 68.8%, they actually won 66.7%.",
  "buckets": [
   {
    "range": "50-60%",
@@ -19,9 +19,9 @@
   },
   {
    "range": "70-80%",
-   "n": 5,
-   "predicted": 0.7517,
-   "actual": 0.4
+   "n": 6,
+   "predicted": 0.7473,
+   "actual": 0.5
   },
   {
    "range": "80-90%",
@@ -75,8 +75,8 @@
  ],
  "leans": {
   "won": 1,
-  "lost": 1,
-  "pending": 1,
+  "lost": 2,
+  "pending": 0,
   "recent": [
    {
     "week": 2,
@@ -97,7 +97,7 @@
     "desc": "NYG +7.5",
     "matchup": "NYG @ LAR",
     "p_market": 0.543,
-    "result": "pending"
+    "result": "lost"
    }
   ]
  }
