@@ -361,7 +361,7 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
       </div>
     </div>
     <div class="custombar" id="custombar" hidden>
-      <span>Your ticket — tap odds below to add or remove legs</span>
+      <span>Your ticket — tap odds below to pick, or + to fill with the safest leg</span>
       <button id="reset">Back to auto</button>
     </div>
     <ul class="legs" id="legs"></ul>
@@ -644,13 +644,13 @@ function legRow(i, l, removable){
 
 function render(){
   clamp();
-  $("legv").textContent = legs;
+  $("legv").textContent = custom.size > 0 ? custom.size : legs;
   $("propv").textContent = props;
   const isCustom = custom.size > 0;
   const pay = isCustom ? null : parsePay($("paygoal").value);
   const target = (isCustom || pay) ? 0 : (parseFloat($("target").value) || 0);
   $("custombar").hidden = !isCustom;
-  $("ctl-legs").classList.toggle("dim", isCustom);
+  $("ctl-legs").classList.remove("dim");
   $("ctl-target").classList.toggle("dim", isCustom || !!pay);
   $("ctl-pay").classList.toggle("dim", isCustom);
   $("ctl-props").classList.toggle("dim", isCustom || target > 0 || !!pay);
@@ -737,8 +737,25 @@ function toggleLeg(k){
   render();
 }
 
-$("legup").onclick = () => { legs++; render(); };
-$("legdn").onclick = () => { legs--; render(); };
+// In hand-picked mode the stepper pads the ticket: + adds the safest
+// leg from a game not already on it, − takes those fills back off.
+// The picks themselves come off with their × buttons.
+const fills = [];
+function addFill(){
+  const used = new Set([...custom.values()].map(l => matchOf(l) || l.desc));
+  const cand = Object.entries(ALL_LEGS)
+    .filter(([k, l]) => !custom.has(k) && !used.has(matchOf(l) || l.desc))
+    .sort((a, b) => b[1].p - a[1].p)[0];
+  if (cand){ custom.set(cand[0], cand[1]); fills.push(cand[0]); }
+}
+function removeFill(){
+  while (fills.length){
+    const k = fills.pop();
+    if (custom.has(k)){ custom.delete(k); return; }
+  }
+}
+$("legup").onclick = () => { if (custom.size) addFill(); else legs++; render(); };
+$("legdn").onclick = () => { if (custom.size) removeFill(); else legs--; render(); };
 $("propup").onclick = () => { props++; render(); };
 $("propdn").onclick = () => { props--; render(); };
 $("reset").onclick = () => { custom.clear(); render(); };
