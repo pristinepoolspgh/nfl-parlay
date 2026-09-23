@@ -5,27 +5,52 @@
   --ground:#0E1319; --card:#1B222B; --inset:#141A21; --edge:#2A3441;
   --ink:#EAF0F6; --muted:#8C99A8; --faint:#5C6875;
   --go:#2FA872; --go-ink:#0B2A1D; --money:#E3B75D; --bar:#243040;
-  --stripe:rgba(255,255,255,.018);
+  --turf-a:#123723; --turf-b:#0E2D1C;
+  --yard:rgba(234,240,246,.12); --sideline:rgba(234,240,246,.2);
+  --hash:rgba(234,240,246,.07);
+  --field-head:#EAF0F6; --field-ink:#9BB2A4; --field-faint:#6E8477;
+  --field-shadow:none;
 }
 @media (prefers-color-scheme: light){
   :root:not([data-theme="dark"]){
     --ground:#EDF0F3; --card:#FFFFFF; --inset:#F4F6F8; --edge:#D8DFE7;
     --ink:#161F29; --muted:#5B6875; --faint:#8B96A2;
     --go:#177A4E; --go-ink:#FFFFFF; --money:#9C7215; --bar:#E3E8EE;
-    --stripe:rgba(0,0,0,.022);
+    --turf-a:#57A365; --turf-b:#4D9A5C;
+    --yard:rgba(255,255,255,.55); --sideline:rgba(255,255,255,.75);
+    --hash:rgba(255,255,255,.38);
+    --field-head:#FFFFFF; --field-ink:rgba(255,255,255,.94);
+    --field-faint:rgba(255,255,255,.8);
+    --field-shadow:0 1px 2px rgba(16,52,32,.35);
   }
 }
 :root[data-theme="light"]{
   --ground:#EDF0F3; --card:#FFFFFF; --inset:#F4F6F8; --edge:#D8DFE7;
   --ink:#161F29; --muted:#5B6875; --faint:#8B96A2;
   --go:#177A4E; --go-ink:#FFFFFF; --money:#9C7215; --bar:#E3E8EE;
-  --stripe:rgba(0,0,0,.022);
+  --turf-a:#57A365; --turf-b:#4D9A5C;
+  --yard:rgba(255,255,255,.55); --sideline:rgba(255,255,255,.75);
+  --hash:rgba(255,255,255,.38);
+  --field-head:#FFFFFF; --field-ink:rgba(255,255,255,.94);
+  --field-faint:rgba(255,255,255,.8);
+  --field-shadow:0 1px 2px rgba(16,52,32,.35);
 }
 *{box-sizing:border-box}
+[hidden]{display:none !important}
 body{
-  background:var(--ground);
-  background-image:repeating-linear-gradient(90deg,
-    var(--stripe) 0 2px, transparent 2px 72px);
+  /* The field: mowing stripes every 5 yards, a yard line on each
+     boundary, hash marks down the middle, sidelines at the edges. */
+  background-color:var(--turf-b);
+  background-image:
+    repeating-linear-gradient(180deg, var(--hash) 0 3px, transparent 3px 24px),
+    repeating-linear-gradient(180deg, var(--hash) 0 3px, transparent 3px 24px),
+    linear-gradient(var(--sideline), var(--sideline)),
+    linear-gradient(var(--sideline), var(--sideline)),
+    repeating-linear-gradient(180deg, var(--yard) 0 2px, transparent 2px 96px),
+    repeating-linear-gradient(180deg, var(--turf-a) 0 96px, var(--turf-b) 96px 192px);
+  background-size:8px auto, 8px auto, 2px auto, 2px auto, auto auto, auto auto;
+  background-position:18% 0, 82% 0, 5px 0, calc(100% - 5px) 0, 0 0, 0 0;
+  background-repeat:repeat-y, repeat-y, repeat-y, repeat-y, repeat, repeat;
   color:var(--ink);
   font:400 15px/1.45 Barlow, system-ui, sans-serif;
   margin:0; padding-block:20px 40px; padding-inline:16px;
@@ -40,8 +65,10 @@ header .eyebrow{
 header h1{
   font:700 38px/1 "Barlow Condensed", Barlow, sans-serif;
   letter-spacing:.02em; text-transform:uppercase; margin:0;
+  color:var(--field-head); text-shadow:var(--field-shadow);
 }
-header p{margin:4px 0 0; color:var(--muted); font-size:13px}
+header p{margin:4px 0 0; color:var(--field-ink); font-size:13px;
+  text-shadow:var(--field-shadow)}
 .card{background:var(--card); border:1px solid var(--edge); border-radius:14px; overflow:hidden}
 .controls{
   display:grid; grid-template-columns:1fr 1fr; gap:10px;
@@ -135,6 +162,15 @@ a.ticket:hover{filter:brightness(1.08)}
 a.ticket:active{transform:scale(.97)}
 a.ticket[aria-disabled="true"]{opacity:.4; pointer-events:none}
 .ticketwrap p{margin:8px 0 0; text-align:center; color:var(--faint); font-size:12px}
+.sharebtn{
+  display:block; width:100%; margin-top:8px; text-align:center;
+  border:1px dashed var(--edge); background:none; color:var(--muted);
+  font:600 13px/1 Barlow, sans-serif; letter-spacing:.04em;
+  padding:11px; border-radius:9px; cursor:pointer;
+  transition:color .15s, border-color .15s;
+}
+.sharebtn:hover{color:var(--go); border-color:var(--go)}
+.sharebtn[disabled]{opacity:.4; cursor:default}
 .tear{position:relative; border-top:2px dashed var(--edge); margin:0 -1px}
 .tear::before, .tear::after{
   content:""; position:absolute; top:-9px; width:16px; height:16px;
@@ -180,9 +216,10 @@ a.ticket[aria-disabled="true"]{opacity:.4; pointer-events:none}
 .stub small{color:var(--faint); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; text-align:right}
 h2{
   font:600 15px/1 "Barlow Condensed", sans-serif; letter-spacing:.1em;
-  text-transform:uppercase; color:var(--muted); margin:4px 0 -8px;
+  text-transform:uppercase; color:var(--field-ink); margin:4px 0 -8px;
+  text-shadow:var(--field-shadow);
 }
-h2 small{color:var(--faint); letter-spacing:.02em; text-transform:none; font:500 12px/1 Barlow, sans-serif}
+h2 small{color:var(--field-faint); letter-spacing:.02em; text-transform:none; font:500 12px/1 Barlow, sans-serif}
 .rows{list-style:none; margin:0; padding:0}
 .rows li{display:grid; grid-template-columns:4px 1fr auto; gap:0 12px; align-items:center; padding:10px 14px 10px 10px}
 .rows li + li{border-top:1px solid var(--edge)}
@@ -224,7 +261,7 @@ button.side.on small{color:var(--go-ink)}
 }
 .savebar button:hover{color:var(--go); border-color:var(--go)}
 .savebar .saved{color:var(--go); font-size:12.5px; white-space:nowrap}
-.record{color:var(--muted); font-size:12.5px; font-variant-numeric:tabular-nums}
+.record{color:var(--field-faint); font-size:12.5px; font-variant-numeric:tabular-nums}
 .tk{padding:12px 14px}
 .tk + .tk{border-top:1px solid var(--edge)}
 .tk .head{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
@@ -264,7 +301,8 @@ button.side.on small{color:var(--go-ink)}
   padding:7px 0; border-top:1px dashed var(--edge); font-size:13px}
 .upsets .who{font-weight:600}
 .upsets .sc{color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap}
-footer{color:var(--faint); font-size:12px; line-height:1.5}
+footer{color:var(--field-faint); font-size:12px; line-height:1.5;
+  text-shadow:var(--field-shadow)}
 .sendbar{
   position:fixed; left:0; right:0; bottom:0; z-index:20;
   background:var(--card); border-top:1px solid var(--edge);
@@ -328,6 +366,7 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
     <ul class="legs" id="legs"></ul>
     <div class="ticketwrap">
       <a class="ticket" id="ticket" target="_blank" rel="noopener">Bet this ticket on FanDuel</a>
+      <button class="sharebtn" id="share" type="button">Send this ticket to a friend</button>
       <p>Opens the FanDuel app with every leg on the slip. Check the picks and price there before you fire.</p>
     </div>
     <div class="savebar" id="savebar" hidden>
@@ -637,6 +676,7 @@ function render(){
   const t = $("ticket");
   if (ticketLegs.length){ t.href = slip(ticketLegs); t.removeAttribute("aria-disabled"); }
   else { t.removeAttribute("href"); t.setAttribute("aria-disabled", "true"); }
+  $("share").disabled = !ticketLegs.length;
 
   const stake = parseFloat($("stake").value) || 0;
   const fdDec = ticketLegs.reduce((a,l) => a*dec(l.odds), 1);
@@ -897,6 +937,26 @@ function renderBook(snap){
   }
   $("book").innerHTML = html;
 }
+
+$("share").onclick = async () => {
+  const c = CUR;
+  if (!c || !c.legs.length) return;
+  const lines = c.legs.map((l, i) =>
+    `${i + 1}. ${l.desc} (${fd(l.odds)}) — ${l.sub}`);
+  const text = `🏈 ${c.legs.length}-leg parlay · ${pct(c.combined)} to hit · ` +
+    `$${c.stake.toFixed(0)} pays $${(c.stake * c.fdDec).toFixed(2)} ` +
+    `(${decToAm(c.fdDec)})\n` + lines.join("\n") +
+    `\n\nBet it on FanDuel in one tap:\n` + slip(c.legs);
+  try {
+    if (navigator.share){ await navigator.share({text}); return; }
+  } catch(e){ return; }  // share sheet cancelled
+  try {
+    await navigator.clipboard.writeText(text);
+    const b = $("share"), old = b.textContent;
+    b.textContent = "Copied — paste it to a friend";
+    setTimeout(() => { b.textContent = old; }, 2000);
+  } catch(e){}
+};
 
 $("save").onclick = async () => {
   if (!DBH || !CUR.legs.length || writing) return;
