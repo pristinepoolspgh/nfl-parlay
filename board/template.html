@@ -409,7 +409,7 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
   <h2>Props <small>&middot; strongest priced sides, one per player</small></h2>
   <section class="card"><ul class="rows" id="propboard"></ul></section>
 
-  <h2 id="readhead" hidden>The read <small>&middot; Claude&rsquo;s pregame judgment, graded like everything else</small></h2>
+  <h2 id="readhead" hidden>The read <small>&middot; the model&rsquo;s pregame judgment, graded like everything else</small></h2>
   <section class="card" id="readcard" hidden><div class="book" id="read"></div></section>
 
   <h2 id="bookhead" hidden>The book so far <small>&middot; what the market said vs what happened</small></h2>
@@ -946,7 +946,7 @@ async function renderBook(snap){
       (${b.sim.n} games graded).</div>`;
   }
   if (b.leans && (b.leans.won + b.leans.lost + b.leans.pending) > 0){
-    html += `<div class="sum" style="margin-top:12px">Claude&rsquo;s leans:
+    html += `<div class="sum" style="margin-top:12px">Model leans:
       <b>${b.leans.won}–${b.leans.lost}</b>${b.leans.pending ? ` (${b.leans.pending} pending)` : ""}
       — judged by the same scoreboard as the market.</div>`;
   }
