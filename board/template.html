@@ -239,6 +239,14 @@ button.side:active{transform:scale(.94)}
 button.side.on{background:var(--go); border-color:var(--go); color:var(--go-ink)}
 button.side.on small{color:var(--go-ink)}
 .injline{display:block; color:var(--muted); font-size:11.5px; margin-top:2px}
+.more{
+  display:block; border:0; background:none; padding:4px 0 0; cursor:pointer;
+  color:var(--faint); font:600 10.5px/1 Barlow, sans-serif;
+  letter-spacing:.07em; text-transform:uppercase; text-align:left;
+}
+.more::before{content:"▸ "}
+.more.open::before{content:"▾ "}
+.more.hot{color:#D9A93C}
 .injline b{color:#C74545; font-weight:600}
 .injline i{color:#D9A93C; font-style:normal; font-weight:600}
 .itag{
@@ -818,12 +826,6 @@ function wxLine(g){
   return `<span class="injline">${w.temp}°F · ${wind}${rain}${roof}</span>`;
 }
 
-function projLine(g){
-  if (!g.proj || g.say) return "";
-  const [away, home] = g.matchup.split(" @ ");
-  return `<span class="injline">sims: ${home} ${g.proj.h}–${g.proj.a} ${away}</span>`;
-}
-
 function modelLine(g){
   if (!g.say) return "";
   if (g.sayx) return `<span class="injline">${g.say}</span>`;
@@ -845,14 +847,30 @@ function injLine(g){
     ? `<span class="injline">${bits.slice(0, 3).join(" · ")}</span>` : "";
 }
 
-$("slate").innerHTML = D.games.map(g => {
+$("slate").innerHTML = D.games.map((g, i) => {
   const fav = g.sides[0];
   const btn = s => `<button class="side" data-k="${g.market}:${s.sel}">
       ${s.team} ${fd(s.odds)}<small>${pct(s.p)}</small></button>`;
+  let sim = "";
+  if (g.proj){
+    const [away, home] = g.matchup.split(" @ ");
+    sim = ` · sims ${home} ${g.proj.h}–${g.proj.a} ${away}`;
+  }
+  const extra = `${modelLine(g)}${wxLine(g)}${injLine(g)}`;
+  const hot = g.say && !g.sayx;
+  const more = extra ? `<button class="more${hot ? " hot" : ""}" data-x="gx${i}">
+      ${hot ? "model note" : "notes"}</button>
+    <span class="extra" id="gx${i}" hidden>${extra}</span>` : "";
   return `<li style="--tc:${TEAMCOLOR[fav.team] || "var(--edge)"}"><span class="tab"></span>
-    <span><span class="m">${g.matchup}</span><br><span class="t">${kick(g.start)}</span>${projLine(g)}${modelLine(g)}${wxLine(g)}${injLine(g)}</span>
+    <span><span class="m">${g.matchup}</span><br><span class="t">${kick(g.start)}${sim}</span>${more}</span>
     <span class="sides">${btn(g.sides[0])}${btn(g.sides[1])}</span></li>`;
 }).join("");
+document.querySelectorAll("#slate .more").forEach(b =>
+  b.onclick = () => {
+    const x = $(b.dataset.x);
+    x.hidden = !x.hidden;
+    b.classList.toggle("open", !x.hidden);
+  });
 
 $("propboard").innerHTML = D.props.map(c => {
   const tag = c.inj === "Questionable" ? `<span class="itag q">Q</span>`
