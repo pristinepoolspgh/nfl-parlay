@@ -248,6 +248,14 @@ button.side.on small{color:var(--go-ink)}
 .more::before{content:"▸ "}
 .more.open::before{content:"▾ "}
 .more.hot{color:#D9A93C}
+.showall{
+  display:block; width:calc(100% - 28px); margin:2px 14px 12px;
+  border:1px dashed var(--edge); background:none; color:var(--muted);
+  font:600 12.5px/1 Barlow, sans-serif; letter-spacing:.05em;
+  padding:10px; border-radius:9px; cursor:pointer;
+  transition:color .15s, border-color .15s;
+}
+.showall:hover{color:var(--go); border-color:var(--go)}
 .injline b{color:#C74545; font-weight:600}
 .injline i{color:#D9A93C; font-style:normal; font-weight:600}
 .itag{
@@ -943,6 +951,28 @@ if ((D.tds || []).length){
         TD ${fd(c.odds)}<small>${pct(c.p)}</small></button></span></li>`;
   }).join("");
 }
+
+// Keep the page short: long sections open folded to their top rows.
+function trimList(ulId, keep, label){
+  const ul = $(ulId);
+  const items = [...ul.children];
+  if (items.length <= keep + 2) return;
+  items.slice(keep).forEach(li => { li.hidden = true; });
+  const btn = document.createElement("button");
+  btn.className = "showall";
+  btn.textContent = `Show all ${items.length} ${label}`;
+  let open = false;
+  btn.onclick = () => {
+    open = !open;
+    items.slice(keep).forEach(li => { li.hidden = !open; });
+    btn.textContent = open ? "Show less"
+      : `Show all ${items.length} ${label}`;
+  };
+  ul.after(btn);
+}
+trimList("slate", 8, "games");
+trimList("propboard", 8, "props");
+trimList("tdboard", 6, "TD scorers");
 
 document.querySelectorAll("button.side").forEach(b =>
   b.onclick = () => toggleLeg(b.dataset.k));
