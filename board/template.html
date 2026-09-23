@@ -360,7 +360,7 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
     the current price when it opens — check it before you fire.</div>
   </section>
 
-  <h2>The board <small>&middot; tap a price to build your own</small></h2>
+  <h2>The board <small>&middot; tap a price to build your own &middot; model notes in plain words under flagged games</small></h2>
   <section class="card"><ul class="rows" id="slate"></ul></section>
 
   <h2>Props <small>&middot; strongest priced sides, one per player</small></h2>
@@ -373,9 +373,11 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
   <section class="card" id="bookcard" hidden><div class="book" id="book"></div></section>
 
   <footer>Probabilities are de-vigged market estimates (each market’s sides sum to
-  100%), not predictions. Fair figures exclude the book’s vig; FanDuel reprices
-  same-game combos on the slip. Lines move; check the slip before betting.
-  Nothing here is betting advice.</footer>
+  100%), not predictions. “Our numbers” are a power rating built purely from
+  final scores — it cannot see injuries, which is why notes it can explain away
+  are dismissed in plain words. Fair figures exclude the book’s vig; FanDuel
+  reprices same-game combos on the slip. Lines move; check the slip before
+  betting. Nothing here is betting advice.</footer>
 </div>
 
 <div class="sendbar" id="sendbar" hidden>
@@ -756,14 +758,11 @@ function wxLine(g){
 }
 
 function modelLine(g){
-  if (g.ep === undefined) return "";
-  const fav = g.sides[0];
-  const edge = g.ep - fav.p;
-  if (Math.abs(edge) < 0.04) return "";
-  const s = (edge > 0 ? "+" : "−") + Math.abs(edge*100).toFixed(0);
-  const w = edge > 0 ? `<i>` : `<b>`;
-  const wc = edge > 0 ? `</i>` : `</b>`;
-  return `<span class="injline">${w}model: ${fav.team} ${pct(g.ep)} vs market ${pct(fav.p)} (${s})${wc}</span>`;
+  if (!g.say) return "";
+  if (g.sayx) return `<span class="injline">${g.say}</span>`;
+  const edge = g.ep - g.sides[0].p;
+  const w = edge > 0 ? "i" : "b";
+  return `<span class="injline"><${w}>${g.say}</${w}></span>`;
 }
 
 function injLine(g){

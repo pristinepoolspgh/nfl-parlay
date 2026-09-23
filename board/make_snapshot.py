@@ -304,6 +304,39 @@ def build_snapshot():
         if st:
             c["inj"] = st
 
+    # Plain-English model notes: say what each flagged edge means, and
+    # dismiss the ones the injury report explains (Elo can't see hurt QBs).
+    def _qb_hurt(team):
+        return any(r["pos"] == "QB" and r["status"] in ("Out", "Doubtful")
+                   for r in inj_by_team.get(team, []))
+    for g in games:
+        if "ep" not in g:
+            continue
+        fav, dog = g["sides"][0]["team"], g["sides"][1]["team"]
+        m, e = g["sides"][0]["p"], g["ep"]
+        edge = e - m
+        if abs(edge) < 0.04:
+            continue
+        mp, epc = f"{m*100:.0f}%", f"{e*100:.0f}%"
+        if edge < 0 and _qb_hurt(dog):
+            g["say"] = (f"Our numbers only make {fav} {epc}, but the market's "
+                        f"{mp} knows {dog}'s QB is hurt — gap explained, "
+                        f"no edge.")
+            g["sayx"] = True
+        elif edge > 0 and _qb_hurt(fav):
+            g["say"] = (f"Our numbers like {fav} at {epc} vs the market's "
+                        f"{mp}, but {fav}'s QB injury explains the market's "
+                        f"caution.")
+            g["sayx"] = True
+        elif edge < 0:
+            g["say"] = (f"The price says {fav} {mp}; their results say "
+                        f"more like {epc}. Either the number is rich — or "
+                        f"the market knows something the scores don't.")
+        else:
+            g["say"] = (f"{fav} have played better than this price: our "
+                        f"numbers say {epc}, the market only {mp}. Value on "
+                        f"{fav} unless there's news the scores can't see.")
+
     stamp = (datetime.now(np._EASTERN) if np._EASTERN
              else datetime.utcnow()).strftime("%b %d, %Y %I:%M %p ET")
     return {"generated": stamp, "week": week, "games": games,
