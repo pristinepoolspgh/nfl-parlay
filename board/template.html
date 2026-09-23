@@ -275,6 +275,7 @@ button.side.on small{color:var(--go-ink)}
   padding:7px 9px; border-radius:99px; cursor:pointer; transition:transform .1s;
 }
 .chip:active{transform:scale(.94)}
+span.chip{cursor:default}
 .chip.won{background:rgba(47,168,114,.16); border-color:var(--go); color:var(--go)}
 .chip.lost{background:rgba(199,69,69,.14); border-color:#C74545; color:#C74545; text-decoration:line-through}
 .badge{
@@ -391,6 +392,9 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
 
   <h2 id="tkhead" hidden>My tickets <small class="record" id="record"></small></h2>
   <section class="card" id="tkcard" hidden><div id="tickets"></div></section>
+
+  <h2 id="frhead" hidden>Friends&rsquo; tickets <small>&middot; what the crew is riding</small></h2>
+  <section class="card" id="frcard" hidden><div id="frtickets"></div></section>
 
   <h2 id="scorehead" hidden>On the field <small>&middot; tap a live price to bet in-game</small></h2>
   <section class="card scorebox" id="scorecard" hidden><ul class="rows" id="scores"></ul>
@@ -681,7 +685,7 @@ function render(){
   const stake = parseFloat($("stake").value) || 0;
   const fdDec = ticketLegs.reduce((a,l) => a*dec(l.odds), 1);
   CUR = {legs: ticketLegs, combined, fdDec, stake};
-  $("savebar").hidden = !(dbReady && ticketLegs.length);
+  $("savebar").hidden = !(dbReady && ticketLegs.length && CAN_WRITE !== false);
   $("savednote").hidden = true;
   $("comb").textContent = ticketLegs.length ? pct(combined) : "—";
   $("fair").innerHTML = ticketLegs.length
@@ -850,6 +854,9 @@ document.querySelectorAll("button.side").forEach(b =>
 // ------------------------------------------------------ ticket tracker --
 let CUR = {legs: [], combined: 1, fdDec: 1, stake: 0};
 let dbReady = false, DBH = null, writing = false;
+let UID = null, USERNS = null, IS_OWNER = false, CAN_WRITE = null;
+const esc = s => String(s).replace(/[&<>"]/g,
+  c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 
 const kindOf = d => d.endsWith(" ML") ? "ml"
   : /^(Over|Under) [\d.]+ pts$/.test(d) ? "total"
@@ -862,12 +869,20 @@ const deriveStatus = lgs =>
   lgs.some(l => l.result === "lost") ? "missed" :
   lgs.every(l => l.result === "won") ? "hit" : "pending";
 
-const _dbUse = window.claude && window.claude.use
-  ? window.claude.use("db") : null;
-if (_dbUse) _dbUse.then(db => {
+const _cu = window.claude && window.claude.use
+  ? window.claude.use.bind(window.claude) : null;
+if (_cu) Promise.all([_cu("db"), _cu("user")]).then(async ([db, user]) => {
   if (!db) return;
-  DBH = db; dbReady = true;
-  $("savebar").hidden = !CUR.legs.length;
+  DBH = db; USERNS = user;
+  try {
+    if (user){
+      UID = await user.id();
+      IS_OWNER = await user.isOwner();
+      CAN_WRITE = await user.can("data.write");
+    }
+  } catch(e){}
+  dbReady = true;
+  $("savebar").hidden = !(CUR.legs.length && CAN_WRITE !== false);
   db.collection("tickets").orderBy("placed", "desc").limit(30)
     .onSnapshot(renderTickets, () => {});
   db.doc("meta/insights").onSnapshot(renderBook, () => {});
@@ -964,50 +979,89 @@ $("save").onclick = async () => {
   try {
     await DBH.collection("tickets").add({
       placed: new Date().toISOString(), week: D.week,
+      ...(UID ? {owner: UID} : {}),
       stake: CUR.stake, combined: CUR.combined,
       fdPays: CUR.stake * CUR.fdDec, status: "pending",
       legs: CUR.legs.map(l => ({desc: l.desc, sub: l.sub || "",
         p: l.p, odds: l.odds, kind: kindOf(l.desc),
         matchup: matchOf(l), result: "pending"}))});
     $("savednote").hidden = false;
-  } catch(e){} finally { writing = false; }
+  } catch(e){
+    // A well-formed write refused means this viewer can't write here.
+    if (e && e.code === "invalid_argument"){
+      CAN_WRITE = false; $("savebar").hidden = true;
+    }
+  } finally { writing = false; }
 };
 
-function renderTickets(snap){
-  const has = !snap.empty;
-  $("tkhead").hidden = !has;
-  $("tkcard").hidden = !has;
-  if (!has) return;
-  let w = 0, l = 0, p = 0, net = 0;
-  const html = snap.docs.map(dsnap => {
+async function renderTickets(snap){
+  // Legacy tickets saved before owner tagging belong to the board owner.
+  const mine = [], theirs = [];
+  snap.docs.forEach(dsnap => {
     const t = dsnap.data();
-    if (t.status === "hit"){ w++; net += t.fdPays - t.stake; }
-    else if (t.status === "missed"){ l++; net -= t.stake; }
-    else p++;
-    const when = new Date(t.placed).toLocaleDateString("en-US",
-      {month: "short", day: "numeric"});
-    const chips = t.legs.map((lg, i) =>
-      `<button class="chip ${lg.result === "won" ? "won" : lg.result === "lost" ? "lost" : ""}"
-        data-t="${dsnap.id}" data-i="${i}">${lg.desc}</button>`).join("");
-    return `<div class="tk">
-      <div class="head">
-        <span><span class="line">$${(+t.stake).toFixed(0)} →
-          <span class="money">$${(+t.fdPays).toFixed(2)}</span></span>
-          <span class="when"> · ${when} · wk ${t.week} · ${pct(t.combined)}</span></span>
-        <span><span class="badge ${t.status}">${t.status}</span>
-          <button class="del" data-t="${dsnap.id}" aria-label="Delete ticket">&times;</button></span>
-      </div>
-      <div class="lgs">${chips}</div>
-      ${t.status === "pending" ? `<div class="hint">Finished games settle automatically on the next refresh; tap a leg to mark it won or lost yourself.</div>` : ""}
-    </div>`;
-  }).join("");
-  $("tickets").innerHTML = html;
-  $("record").textContent =
-    ` · ${w}–${l}${p ? ` (${p} pending)` : ""} · net ${net < 0 ? "−" : "+"}$${Math.abs(net).toFixed(2)}`;
-  document.querySelectorAll("#tickets .chip").forEach(c =>
-    c.onclick = () => cycleLeg(c.dataset.t, +c.dataset.i));
-  document.querySelectorAll("#tickets .del").forEach(b =>
-    b.onclick = () => { if (DBH && !writing) DBH.doc("tickets/" + b.dataset.t).delete(); });
+    const isMine = t.owner ? t.owner === UID : IS_OWNER;
+    (isMine ? mine : theirs).push({id: dsnap.id, t});
+  });
+
+  const when = t => new Date(t.placed).toLocaleDateString("en-US",
+    {month: "short", day: "numeric"});
+  $("tkhead").hidden = !mine.length;
+  $("tkcard").hidden = !mine.length;
+  if (mine.length){
+    let w = 0, l = 0, p = 0, net = 0;
+    const html = mine.map(({id, t}) => {
+      if (t.status === "hit"){ w++; net += t.fdPays - t.stake; }
+      else if (t.status === "missed"){ l++; net -= t.stake; }
+      else p++;
+      const chips = t.legs.map((lg, i) =>
+        `<button class="chip ${lg.result === "won" ? "won" : lg.result === "lost" ? "lost" : ""}"
+          data-t="${id}" data-i="${i}">${lg.desc}</button>`).join("");
+      return `<div class="tk">
+        <div class="head">
+          <span><span class="line">$${(+t.stake).toFixed(0)} →
+            <span class="money">$${(+t.fdPays).toFixed(2)}</span></span>
+            <span class="when"> · ${when(t)} · wk ${t.week} · ${pct(t.combined)}</span></span>
+          <span><span class="badge ${t.status}">${t.status}</span>
+            <button class="del" data-t="${id}" aria-label="Delete ticket">&times;</button></span>
+        </div>
+        <div class="lgs">${chips}</div>
+        ${t.status === "pending" ? `<div class="hint">Finished games settle automatically on the next refresh; tap a leg to mark it won or lost yourself.</div>` : ""}
+      </div>`;
+    }).join("");
+    $("tickets").innerHTML = html;
+    $("record").textContent =
+      ` · ${w}–${l}${p ? ` (${p} pending)` : ""} · net ${net < 0 ? "−" : "+"}$${Math.abs(net).toFixed(2)}`;
+    document.querySelectorAll("#tickets .chip").forEach(c =>
+      c.onclick = () => cycleLeg(c.dataset.t, +c.dataset.i));
+    document.querySelectorAll("#tickets .del").forEach(b =>
+      b.onclick = () => { if (DBH && !writing) DBH.doc("tickets/" + b.dataset.t).delete(); });
+  }
+
+  $("frhead").hidden = !theirs.length;
+  $("frcard").hidden = !theirs.length;
+  if (theirs.length){
+    let names = {};
+    try {
+      if (USERNS) names = await USERNS.profiles(
+        [...new Set(theirs.map(x => x.t.owner).filter(Boolean))]);
+    } catch(e){}
+    $("frtickets").innerHTML = theirs.map(({id, t}) => {
+      const who = t.owner
+        ? ((names[t.owner] && names[t.owner].name) || "A friend")
+        : "Board owner";
+      const chips = t.legs.map(lg =>
+        `<span class="chip ${lg.result === "won" ? "won" : lg.result === "lost" ? "lost" : ""}">${lg.desc}</span>`).join("");
+      return `<div class="tk">
+        <div class="head">
+          <span><span class="line">${esc(who)} · $${(+t.stake).toFixed(0)} →
+            <span class="money">$${(+t.fdPays).toFixed(2)}</span></span>
+            <span class="when"> · ${when(t)} · wk ${t.week} · ${pct(t.combined)}</span></span>
+          <span class="badge ${t.status}">${t.status}</span>
+        </div>
+        <div class="lgs">${chips}</div>
+      </div>`;
+    }).join("");
+  }
 }
 
 async function cycleLeg(id, i){
