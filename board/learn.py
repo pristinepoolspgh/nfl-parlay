@@ -170,6 +170,56 @@ def main():
                      "total_mae": round(total_mae, 2),
                      "brier": round(brier, 4)}
 
+    # The crew's ledger: everyone's saved tickets, graded by the same
+    # scoreboard. Picks don't feed the score-based sims; they build a
+    # record of who hits and whether saved legs beat their quoted odds.
+    crew_tickets = read_jsonl(os.path.join(MEM, "tickets.jsonl"))
+    crew_picks = read_jsonl(os.path.join(MEM, "picks.jsonl"))
+    crew = None
+    if crew_tickets:
+        people = {}
+        for t in crew_tickets:
+            o = people.setdefault(t.get("owner") or "",
+                                  {"w": 0, "l": 0, "pend": 0,
+                                   "net": 0.0, "legs_w": 0, "legs_l": 0})
+            if t.get("status") == "hit":
+                o["w"] += 1
+                o["net"] += (t.get("fdPays") or 0) - (t.get("stake") or 0)
+            elif t.get("status") == "missed":
+                o["l"] += 1
+                o["net"] -= t.get("stake") or 0
+            else:
+                o["pend"] += 1
+        for p in crew_picks:
+            o = people.get(p.get("owner") or "")
+            if o is None:
+                continue
+            if p.get("result") == "won":
+                o["legs_w"] += 1
+            elif p.get("result") == "lost":
+                o["legs_l"] += 1
+        graded = [p for p in crew_picks
+                  if p.get("result") in ("won", "lost")
+                  and isinstance(p.get("p"), (int, float))]
+        legs = None
+        if graded:
+            legs = {"n": len(graded),
+                    "avg_p": round(sum(p["p"] for p in graded)
+                                   / len(graded), 4),
+                    "hit": round(sum(p["result"] == "won"
+                                     for p in graded) / len(graded), 4)}
+        by_kind = {}
+        for p in graded:
+            k = by_kind.setdefault(p.get("kind") or "?", {"w": 0, "l": 0})
+            k["w" if p["result"] == "won" else "l"] += 1
+        crew = {"people": [dict(id=oid, **{k: (round(v, 2)
+                                if k == "net" else v)
+                                for k, v in st.items()})
+                           for oid, st in sorted(
+                               people.items(),
+                               key=lambda kv: -kv[1]["net"])],
+                "legs": legs, "by_kind": by_kind}
+
     # Rebuild insights from the full results file.
     buckets = []
     for lo, hi in BUCKETS:
@@ -204,6 +254,7 @@ def main():
                     "fav": r["fav"], "p_fav": r["p_fav"],
                     "score": r["score"]} for r in upsets[:12]],
         "sim": sim_stats,
+        "crew": crew,
         "leans": {"won": lw, "lost": ll,
                   "pending": len(all_leans) - lw - ll,
                   "recent": [{"week": j["week"], "desc": l["desc"],
