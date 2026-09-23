@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-22T21:02Z",
+ "updated": "2026-09-23T16:28Z",
  "games": 15,
  "predicted": 0.6882,
  "actual": 0.6667,
@@ -73,6 +73,7 @@
    "score": "CIN 20 - HOU 6"
   }
  ],
+ "sim": null,
  "leans": {
   "won": 1,
   "lost": 2,

@@ -159,6 +159,18 @@ def build_snapshot():
             "matchup": f"{np._abbr(away)} @ {np._abbr(home)}",
             "start": np._kickoff_et(ev["openDate"][:16] + "Z")}
 
+    # FanDuel opens next week's lines while this week is still ahead;
+    # keep the board to ESPN's current week so two slates don't mix.
+    # (ESPN writes neutral-site games as "A VS B".) If the join comes
+    # up empty — e.g. late Monday before ESPN flips the week — show
+    # everything rather than a blank board.
+    week_mus = {ev.get("shortName", "").replace(" VS ", " @ ")
+                for ev in espn.get("events", [])}
+    in_week = {eid: e for eid, e in events.items()
+               if e["matchup"] in week_mus}
+    if in_week:
+        events = in_week
+
     games = []
     for m in att["markets"].values():
         if (m.get("marketType") != "MONEY_LINE"
