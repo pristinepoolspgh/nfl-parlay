@@ -418,6 +418,9 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
   <h2>Props <small>&middot; strongest priced sides, one per player</small></h2>
   <section class="card"><ul class="rows" id="propboard"></ul></section>
 
+  <h2 id="tdhead" hidden>TD scorers <small>&middot; anytime TD &middot; one-sided market, so odds carry the book&rsquo;s vig</small></h2>
+  <section class="card" id="tdcard" hidden><ul class="rows" id="tdboard"></ul></section>
+
   <h2 id="readhead" hidden>The read <small>&middot; the model&rsquo;s pregame judgment, graded like everything else</small></h2>
   <section class="card" id="readcard" hidden><div class="book" id="read"></div></section>
 
@@ -494,6 +497,11 @@ D.props.forEach(c => {
       sub: c.type + " · " + c.matchup};
   }
   const l = propLeg(c); ALL_LEGS[key(l)] = l;
+});
+(D.tds || []).forEach(c => {
+  ALL_LEGS[c.market + ":" + c.sel] = {
+    desc: `${c.player} anytime TD`, team: null, p: c.p, odds: c.odds,
+    market: c.market, sel: c.sel, sub: "anytime TD · " + c.matchup};
 });
 
 // Priced props as ladders for the suggestion builders: the safer side
@@ -914,6 +922,20 @@ $("propboard").innerHTML = D.props.map(c => {
       <span class="t">${c.type} · ${c.matchup}</span></span>
     <span class="sides">${btn("over")}${btn("under")}</span></li>`;
 }).join("");
+
+if ((D.tds || []).length){
+  $("tdhead").hidden = false;
+  $("tdcard").hidden = false;
+  $("tdboard").innerHTML = D.tds.map(c => {
+    const tag = c.inj === "Questionable" ? `<span class="itag q">Q</span>`
+      : c.inj ? `<span class="itag out">${c.inj === "Out" ? "OUT" : "DTFL"}</span>` : "";
+    return `<li style="--tc:var(--money)"><span class="tab"></span>
+      <span><span class="m">${c.player}${tag}</span><br>
+        <span class="t">anytime TD · ${c.matchup}</span></span>
+      <span class="sides"><button class="side" data-k="${c.market}:${c.sel}">
+        TD ${fd(c.odds)}<small>${pct(c.p)}</small></button></span></li>`;
+  }).join("");
+}
 
 document.querySelectorAll("button.side").forEach(b =>
   b.onclick = () => toggleLeg(b.dataset.k));

@@ -32,6 +32,36 @@ INJ_URL = ("https://site.api.espn.com/apis/site/v2/sports/football/nfl/"
            "injuries")
 POS_RANK = {"QB": 0, "RB": 1, "WR": 2, "TE": 3}
 
+TD_TAB = ("https://sbapi.pa.sportsbook.fanduel.com/api/event-page"
+          "?_ak=FhMFpcPWXMeyZxOx&eventId={eid}&tab=td-scorer-props")
+
+
+def fetch_tds(eid, mu, top=5):
+    """Any Time Touchdown Scorer runners for one game. A one-sided
+    market: there is no opposite side to de-vig against, so `p` is the
+    implied probability with FanDuel's vig still in it — the board
+    labels it as such rather than pretending it's fair.
+    """
+    d = curl_json(TD_TAB.format(eid=eid))
+    for m in d.get("attachments", {}).get("markets", {}).values():
+        if (m.get("marketName") != "Any Time Touchdown Scorer"
+                or m.get("marketStatus") != "OPEN"):
+            continue
+        rows = []
+        for r in m.get("runners", []):
+            if r.get("runnerStatus") != "ACTIVE":
+                continue
+            o = np._fd_odds(r)
+            if o is None:
+                continue
+            rows.append({"player": r["runnerName"], "matchup": mu,
+                         "p": round(np.american_to_prob(o), 5),
+                         "odds": o, "market": m["marketId"],
+                         "sel": r["selectionId"]})
+        rows.sort(key=lambda r: -r["p"])
+        return rows[:top]
+    return []
+
 WX_URL = ("https://api.open-meteo.com/v1/forecast?latitude={lat}"
           "&longitude={lon}&hourly=temperature_2m,precipitation_probability,"
           "wind_speed_10m,wind_gusts_10m&temperature_unit=fahrenheit"
@@ -237,10 +267,14 @@ def build_snapshot():
     for mu in live:
         live[mu].sort(key=lambda b: korder[b["kind"]])
 
-    cands, seen, props, alts = [], set(), [], {}
+    cands, seen, props, alts, tds = [], set(), [], {}, []
     for eid, e in events.items():
         mu = e["matchup"]
         cands.extend(np.fetch_fd_props(eid, mu))
+        try:
+            tds.extend(fetch_tds(eid, mu))
+        except Exception:
+            pass
         rungs = [a for a in np.fetch_fd_alts(eid, mu) if a["p"] >= 0.02]
         g = next((x for x in games if x["matchup"] == mu), None)
         if g:
@@ -339,6 +373,12 @@ def build_snapshot():
         st = status_by_name.get(_norm_name(c["player"]))
         if st:
             c["inj"] = st
+    tds.sort(key=lambda r: -r["p"])
+    tds = tds[:20]
+    for c in tds:
+        st = status_by_name.get(_norm_name(c["player"]))
+        if st:
+            c["inj"] = st
 
     # Plain-English model notes: say what each flagged edge means, and
     # dismiss the ones the injury report explains (Elo can't see hurt QBs).
@@ -380,8 +420,8 @@ def build_snapshot():
     stamp = (datetime.now(np._EASTERN) if np._EASTERN
              else datetime.utcnow()).strftime("%b %d, %Y %I:%M %p ET")
     return {"generated": stamp, "week": week, "games": games,
-            "props": props[:24], "alts": alts, "scores": scores,
-            "live": live}
+            "props": props[:24], "tds": tds, "alts": alts,
+            "scores": scores, "live": live}
 
 
 def log_pregame(snap):
