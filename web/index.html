@@ -495,12 +495,40 @@ D.props.forEach(c => {
   const l = propLeg(c); ALL_LEGS[key(l)] = l;
 });
 
+// Priced props as ladders for the suggestion builders: the safer side
+// is the resting rung, the other side a payout move. Hurt players
+// (Out/Doubtful) never get suggested.
+function propLadders(){
+  return D.props.filter(c => c.inj !== "Out" && c.inj !== "Doubtful")
+    .map(c => {
+      const rungs = ["over", "under"]
+        .filter(s => c[s])
+        .map(s => ({desc: `${c.player} ${s === "over" ? "O" : "U"} ${c.line}`,
+                    p: c[s].p, odds: c[s].odds, market: c.market,
+                    sel: c[s].sel, matchup: c.matchup}))
+        .sort((a, b) => a.p - b.p);
+      return {mu: c.type + " · " + c.matchup, rungs};
+    })
+    .filter(l => l.rungs.length);
+}
+
+// The Props stepper carries into suggested tickets: reserve that many
+// slots for the safest priced props and build the games around them.
+const safestFirst = (a, b) =>
+  b.rungs[b.rungs.length-1].p - a.rungs[a.rungs.length-1].p;
+function pickProps(n){
+  const pp = Math.min(props, Math.max(0, n - 1));
+  return propLadders().sort(safestFirst).slice(0, pp);
+}
+
 function buildTarget(target, n){
+  const pl = pickProps(n);
   const ladders = Object.entries(D.alts)
     .map(([mu, rungs]) => ({mu, rungs}))
     .filter(l => l.rungs.length)
-    .sort((a,b) => b.rungs[b.rungs.length-1].p - a.rungs[a.rungs.length-1].p)
-    .slice(0, n);
+    .sort(safestFirst)
+    .slice(0, n - pl.length)
+    .concat(pl);
   if (!ladders.length) return null;
   const idx = ladders.map(l => l.rungs.length - 1);
   let cur = ladders.reduce((acc,l,j) => acc * l.rungs[idx[j]].p, 1);
@@ -535,6 +563,7 @@ function payLadders(n){
   D.games.forEach(g => { const d = g.sides[1];
     dogs[g.matchup] = {desc: d.team+" ML", p: d.p, odds: d.odds,
                        market: g.market, sel: d.sel}; });
+  const pl = pickProps(n);
   return Object.entries(D.alts)
     .map(([mu, rungs]) => {
       const all = dogs[mu] ? rungs.concat([dogs[mu]]) : rungs.slice();
@@ -542,8 +571,9 @@ function payLadders(n){
       return {mu, rungs: all};
     })
     .filter(l => l.rungs.length)
-    .sort((a,b) => b.rungs[b.rungs.length-1].p - a.rungs[a.rungs.length-1].p)
-    .slice(0, n);
+    .sort(safestFirst)
+    .slice(0, n - pl.length)
+    .concat(pl);
 }
 
 // Payout mode: the most likely ticket whose posted price reaches the
@@ -583,7 +613,8 @@ function payWalk(ladders, targetDec){
 }
 
 function buildPayout(targetDec, n){
-  const total = Object.keys(D.alts).length;
+  const total = Object.keys(D.alts).length
+    + Math.min(props, propLadders().length);
   if (!total) return null;
   let best = null, fallback = null;
   for (let k = Math.min(n, total); k <= total; k++){
@@ -661,7 +692,7 @@ function render(){
   $("ctl-legs").classList.remove("dim");
   $("ctl-target").classList.toggle("dim", isCustom || !!pay);
   $("ctl-pay").classList.toggle("dim", isCustom);
-  $("ctl-props").classList.toggle("dim", isCustom || target > 0 || !!pay);
+  $("ctl-props").classList.toggle("dim", isCustom);
 
   let ticketLegs = [], shortfall = false, payMode = !!pay;
   if (isCustom){
