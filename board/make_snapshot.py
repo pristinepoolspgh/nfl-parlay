@@ -36,6 +36,34 @@ TD_TAB = ("https://sbapi.pa.sportsbook.fanduel.com/api/event-page"
           "?_ak=FhMFpcPWXMeyZxOx&eventId={eid}&tab=td-scorer-props")
 
 
+NEWS_URL = ("https://site.api.espn.com/apis/site/v2/sports/football/nfl/"
+            "news?limit=50")
+
+
+def fetch_news():
+    """Recent ESPN headlines keyed by team abbreviation. Headlines are
+    reported news, attached verbatim — the board and the reads cite
+    them as reporting, never as their own knowledge."""
+    by_team = {}
+    try:
+        d = curl_json(NEWS_URL)
+    except Exception:
+        return by_team
+    for a in d.get("articles", []):
+        head = a.get("headline", "").strip()
+        if not head:
+            continue
+        for c in a.get("categories", []):
+            t = (c.get("team") or {}).get("description")
+            if not t:
+                continue
+            ab = np._abbr(t)
+            rows = by_team.setdefault(ab, [])
+            if head not in rows and len(rows) < 3:
+                rows.append(head)
+    return by_team
+
+
 def fetch_tds(eid, mu, top=5):
     """Any Time Touchdown Scorer runners for one game. A one-sided
     market: there is no opposite side to de-vig against, so `p` is the
@@ -233,7 +261,7 @@ def build_snapshot():
             away, home = name.split(" @ ", 1)
             started[int(eid)] = f"{np._abbr(away)} @ {np._abbr(home)}"
     final_mus = {s["matchup"] for s in scores if s["final"]}
-    korder = {"ml": 0, "spread": 1, "total": 2}
+    korder = {"ml": 0, "spread": 1, "total": 2, "td": 3}
     live = {}
     for m in att["markets"].values():
         mu = started.get(m.get("eventId"))
@@ -264,6 +292,18 @@ def build_snapshot():
                 {"desc": desc, "kind": kind, "p": round(p, 5),
                  "odds": np._fd_odds(r), "market": m["marketId"],
                  "sel": r["selectionId"]})
+    # In-play TD odds: who's still priced to score in a live game.
+    for eid, mu in started.items():
+        if mu in final_mus:
+            continue
+        try:
+            for r in fetch_tds(eid, mu, top=4):
+                live.setdefault(mu, []).append(
+                    {"desc": f"{r['player']} TD", "kind": "td",
+                     "p": r["p"], "odds": r["odds"],
+                     "market": r["market"], "sel": r["sel"]})
+        except Exception:
+            pass
     for mu in live:
         live[mu].sort(key=lambda b: korder[b["kind"]])
 
@@ -360,12 +400,17 @@ def build_snapshot():
 
     # Injury layer: attach key injuries per game, tag injured prop players.
     inj_by_team = fetch_injuries()
+    news_by_team = fetch_news()
     status_by_name = {_norm_name(r["name"]): r["status"]
                       for rows in inj_by_team.values() for r in rows}
     for g in games:
         away, home = g["matchup"].split(" @ ")
         g["inj"] = {t: inj_by_team.get(t, [])[:4] for t in (away, home)
                     if inj_by_team.get(t)}
+        heads = [h for t in (away, home)
+                 for h in news_by_team.get(t, [])[:2]]
+        if heads:
+            g["news"] = heads[:3]
         wx = fetch_weather(home, g["start"])
         if wx:
             g["wx"] = wx

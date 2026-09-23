@@ -479,6 +479,8 @@ function kick(s){
   return names[day]+" "+hh+":"+String(M).padStart(2,"0")+" "+ap;
 }
 
+const esc = s => String(s).replace(/[&<>"]/g,
+  c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const mlLeg = (g, s) => ({desc: s.team+" ML", team: s.team, p: s.p,
   odds: s.odds, market: g.market, sel: s.sel,
   sub: g.matchup+" · "+kick(g.start)});
@@ -874,6 +876,11 @@ function modelLine(g){
   return `<span class="injline"><${w}>${g.say}</${w}></span>`;
 }
 
+function newsLine(g){
+  return (g.news || []).map(h =>
+    `<span class="injline">📰 ${esc(h)}</span>`).join("");
+}
+
 function injLine(g){
   if (!g.inj) return "";
   const bits = [];
@@ -896,7 +903,7 @@ $("slate").innerHTML = D.games.map((g, i) => {
     const [away, home] = g.matchup.split(" @ ");
     sim = ` · sims ${home} ${g.proj.h}–${g.proj.a} ${away}`;
   }
-  const extra = `${modelLine(g)}${wxLine(g)}${injLine(g)}`;
+  const extra = `${modelLine(g)}${wxLine(g)}${injLine(g)}${newsLine(g)}`;
   const hot = g.say && !g.sayx;
   const more = extra ? `<button class="more${hot ? " hot" : ""}" data-x="gx${i}">
       ${hot ? "model note" : "notes"}</button>
@@ -944,8 +951,6 @@ document.querySelectorAll("button.side").forEach(b =>
 let CUR = {legs: [], combined: 1, fdDec: 1, stake: 0};
 let dbReady = false, DBH = null, writing = false;
 let UID = null, USERNS = null, IS_OWNER = false, CAN_WRITE = null;
-const esc = s => String(s).replace(/[&<>"]/g,
-  c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 
 const kindOf = d => d.endsWith(" ML") ? "ml"
   : /^(Over|Under) [\d.]+ pts$/.test(d) ? "total"
