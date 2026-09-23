@@ -255,17 +255,41 @@ def build_snapshot():
             c["p"] = round(c["p"], 5)
             props.append(c)
 
-    # Model layer: attach Elo win probability for each game's favorite.
+    # Model layer: run the simulator on each game — projected score,
+    # win probability, and the prediction log that grades the model.
     elo_path = os.path.join(os.path.dirname(os.path.dirname(
         os.path.abspath(__file__))), "memory", "elo.json")
     if os.path.exists(elo_path):
-        ratings = json.load(open(elo_path)).get("ratings", {})
-        for g in games:
-            away, home = g["matchup"].split(" @ ")
-            ra = ratings.get(home, 1500.0) + 48.0
-            ph = 1.0 / (1.0 + 10 ** (-(ra - ratings.get(away, 1500.0)) / 400.0))
-            fav = g["sides"][0]["team"]
-            g["ep"] = round(ph if fav == home else 1.0 - ph, 4)
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import sim as simmod
+        model = simmod.Model(elo_path)
+        simlog_path = os.path.join(os.path.dirname(elo_path),
+                                   "simlog.jsonl")
+        logged = set()
+        if os.path.exists(simlog_path):
+            for line in open(simlog_path):
+                try:
+                    r = json.loads(line)
+                    logged.add((r["date"], r["matchup"]))
+                except Exception:
+                    continue
+        with open(simlog_path, "a") as slf:
+            for g in games:
+                away, home = g["matchup"].split(" @ ")
+                pred = model.predict(home, away)
+                fav = g["sides"][0]["team"]
+                g["ep"] = (pred["p_home"] if fav == home
+                           else round(1.0 - pred["p_home"], 4))
+                g["proj"] = {"h": round(pred["proj"]["home"]),
+                             "a": round(pred["proj"]["away"])}
+                key = (g["start"][:10], g["matchup"])
+                if key not in logged:
+                    slf.write(json.dumps({
+                        "date": key[0], "matchup": g["matchup"],
+                        "week": week, "mu_margin": pred["mu_margin"],
+                        "mu_total": pred["mu_total"],
+                        "p_home": pred["p_home"]}) + "\n")
+                    logged.add(key)
 
     # Closing-line log: keep the latest pregame sighting per game (CLV).
     close_path = os.path.join(os.path.dirname(elo_path), "close.jsonl")
@@ -318,22 +342,26 @@ def build_snapshot():
         if abs(edge) < 0.04:
             continue
         mp, epc = f"{m*100:.0f}%", f"{e*100:.0f}%"
+        proj = g.get("proj")
+        away_t, home_t = g["matchup"].split(" @ ")
+        ps = (f"Sims see {home_t} {proj['h']}\u2013{proj['a']} {away_t}. "
+              if proj else "")
         if edge < 0 and _qb_hurt(dog):
-            g["say"] = (f"Our numbers only make {fav} {epc}, but the market's "
+            g["say"] = (ps + f"Our numbers only make {fav} {epc}, but the market's "
                         f"{mp} knows {dog}'s QB is hurt — gap explained, "
                         f"no edge.")
             g["sayx"] = True
         elif edge > 0 and _qb_hurt(fav):
-            g["say"] = (f"Our numbers like {fav} at {epc} vs the market's "
+            g["say"] = (ps + f"Our numbers like {fav} at {epc} vs the market's "
                         f"{mp}, but {fav}'s QB injury explains the market's "
                         f"caution.")
             g["sayx"] = True
         elif edge < 0:
-            g["say"] = (f"The price says {fav} {mp}; their results say "
+            g["say"] = (ps + f"The price says {fav} {mp}; their results say "
                         f"more like {epc}. Either the number is rich — or "
                         f"the market knows something the scores don't.")
         else:
-            g["say"] = (f"{fav} have played better than this price: our "
+            g["say"] = (ps + f"{fav} have played better than this price: our "
                         f"numbers say {epc}, the market only {mp}. Value on "
                         f"{fav} unless there's news the scores can't see.")
 

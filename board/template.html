@@ -757,6 +757,12 @@ function wxLine(g){
   return `<span class="injline">${w.temp}°F · ${wind}${rain}${roof}</span>`;
 }
 
+function projLine(g){
+  if (!g.proj || g.say) return "";
+  const [away, home] = g.matchup.split(" @ ");
+  return `<span class="injline">sims: ${home} ${g.proj.h}–${g.proj.a} ${away}</span>`;
+}
+
 function modelLine(g){
   if (!g.say) return "";
   if (g.sayx) return `<span class="injline">${g.say}</span>`;
@@ -783,7 +789,7 @@ $("slate").innerHTML = D.games.map(g => {
   const btn = s => `<button class="side" data-k="${g.market}:${s.sel}">
       ${s.team} ${fd(s.odds)}<small>${pct(s.p)}</small></button>`;
   return `<li style="--tc:${TEAMCOLOR[fav.team] || "var(--edge)"}"><span class="tab"></span>
-    <span><span class="m">${g.matchup}</span><br><span class="t">${kick(g.start)}</span>${modelLine(g)}${wxLine(g)}${injLine(g)}</span>
+    <span><span class="m">${g.matchup}</span><br><span class="t">${kick(g.start)}</span>${projLine(g)}${modelLine(g)}${wxLine(g)}${injLine(g)}</span>
     <span class="sides">${btn(g.sides[0])}${btn(g.sides[1])}</span></li>`;
 }).join("");
 
@@ -877,6 +883,12 @@ function renderBook(snap){
       `<li><span><span class="who">${u.fav} fell</span>
         <span class="r"> · wk ${u.week} · was ${(u.p_fav*100).toFixed(0)}%</span></span>
         <span class="sc">${u.score}</span></li>`).join("") + `</ul>`;
+  }
+  if (b.sim && b.sim.n){
+    const wa = b.sim.winner_acc !== null ? (b.sim.winner_acc*100).toFixed(0)+"% of winners" : "—";
+    html += `<div class="sum" style="margin-top:12px">Sim engine so far: called ${wa},
+      margins off by ${b.sim.margin_mae} pts on average, totals by ${b.sim.total_mae}
+      (${b.sim.n} games graded).</div>`;
   }
   if (b.leans && (b.leans.won + b.leans.lost + b.leans.pending) > 0){
     html += `<div class="sum" style="margin-top:12px">Claude&rsquo;s leans:

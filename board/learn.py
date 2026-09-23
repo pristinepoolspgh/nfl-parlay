@@ -131,6 +131,45 @@ def main():
                 for j in judgments:
                     f.write(json.dumps(j) + "\n")
 
+    # Grade the simulator's own predictions against finals.
+    SIMLOG = os.path.join(MEM, "simlog.jsonl")
+    simlog = read_jsonl(SIMLOG)
+    pend = [r for r in simlog if "hs" not in r]
+    if pend:
+        dates = {r["date"].replace("-", "") for r in pend}
+        extra = {(datetime.strptime(d, "%Y%m%d") + timedelta(days=1))
+                 .strftime("%Y%m%d") for d in dates}
+        sf = fetch_finals(dates | extra)
+        changed = False
+        for r in pend:
+            if r["matchup"] in sf:
+                r["as_"], r["hs"] = sf[r["matchup"]]
+                changed = True
+        if changed:
+            with open(SIMLOG, "w") as f:
+                for r in simlog:
+                    f.write(json.dumps(r) + "\n")
+    done_sims = [r for r in simlog if "hs" in r]
+    sim_stats = None
+    if done_sims:
+        decided = [r for r in done_sims if r["hs"] != r["as_"]]
+        winner_acc = (sum((r["p_home"] >= 0.5) == (r["hs"] > r["as_"])
+                          for r in decided) / len(decided)
+                      if decided else None)
+        margin_mae = sum(abs((r["hs"] - r["as_"]) - r["mu_margin"])
+                         for r in done_sims) / len(done_sims)
+        total_mae = sum(abs((r["hs"] + r["as_"]) - r["mu_total"])
+                        for r in done_sims) / len(done_sims)
+        brier = sum((r["p_home"] - (1.0 if r["hs"] > r["as_"] else
+                     0.5 if r["hs"] == r["as_"] else 0.0)) ** 2
+                    for r in done_sims) / len(done_sims)
+        sim_stats = {"n": len(done_sims),
+                     "winner_acc": round(winner_acc, 4) if winner_acc
+                     is not None else None,
+                     "margin_mae": round(margin_mae, 2),
+                     "total_mae": round(total_mae, 2),
+                     "brier": round(brier, 4)}
+
     # Rebuild insights from the full results file.
     buckets = []
     for lo, hi in BUCKETS:
@@ -164,6 +203,7 @@ def main():
         "upsets": [{"week": r["week"], "matchup": r["matchup"],
                     "fav": r["fav"], "p_fav": r["p_fav"],
                     "score": r["score"]} for r in upsets[:12]],
+        "sim": sim_stats,
         "leans": {"won": lw, "lost": ll,
                   "pending": len(all_leans) - lw - ll,
                   "recent": [{"week": j["week"], "desc": l["desc"],

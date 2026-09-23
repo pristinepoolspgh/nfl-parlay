@@ -96,12 +96,24 @@ def update(ratings, g):
 
 def build():
     ratings = {}
+    scoring = {}  # team -> [pf25, pa25, n25, pf26, pa26, n26]
     n = 0
+
+    def score(g, season):
+        i = 0 if season == 2025 else 3
+        for team, pf, pa in ((g["home"], g["hs"], g["as"]),
+                             (g["away"], g["as"], g["hs"])):
+            row = scoring.setdefault(team, [0, 0, 0, 0, 0, 0])
+            row[i] += pf
+            row[i + 1] += pa
+            row[i + 2] += 1
+
     # 2025: full regular season and playoffs.
     for st, weeks in ((2, range(1, 19)), (3, range(1, 6))):
         for w in weeks:
             for g in fetch_week(2025, st, w):
                 update(ratings, g)
+                score(g, 2025)
                 n += 1
     # Off-season regression toward the mean.
     for t in ratings:
@@ -113,8 +125,9 @@ def build():
             break
         for g in week_games:
             update(ratings, g)
+            score(g, 2026)
             n += 1
-    return ratings, n
+    return ratings, scoring, n
 
 
 def win_prob(ratings, home, away, neutral=False):
@@ -124,11 +137,27 @@ def win_prob(ratings, home, away, neutral=False):
 
 def main():
     quiet = "--quiet" in sys.argv
-    ratings, n = build()
+    ratings, scoring, n = build()
+    # Blend scoring averages: last season counts at one-third weight.
+    blended = {}
+    tot_sum = tot_n = 0.0
+    for t, (pf25, pa25, n25, pf26, pa26, n26) in scoring.items():
+        w25 = n25 / 3.0
+        w = w25 + n26
+        if w == 0:
+            continue
+        pf = ((pf25 / n25 * w25 if n25 else 0) + pf26) / w
+        pa = ((pa25 / n25 * w25 if n25 else 0) + pa26) / w
+        blended[t] = {"pf": round(pf, 2), "pa": round(pa, 2),
+                      "n": round(w, 1)}
+        tot_sum += pf + pa
+        tot_n += 1
+    league_total = round(tot_sum / tot_n, 2) if tot_n else 44.0
     from datetime import datetime
     os.makedirs(os.path.dirname(ELO_PATH), exist_ok=True)
     json.dump({"updated": datetime.utcnow().strftime("%Y-%m-%dT%H:%MZ"),
-               "games": n,
+               "games": n, "league_total": league_total,
+               "scoring": blended,
                "ratings": {t: round(r, 1) for t, r in
                            sorted(ratings.items(), key=lambda x: -x[1])}},
               open(ELO_PATH, "w"), indent=1)
