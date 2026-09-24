@@ -114,9 +114,11 @@ PW_URL = ("https://github.com/nflverse/nflverse-data/releases/download/"
 
 
 def fetch_qb_starters(season):
-    """Each team's starting QB, defined by data, not memory: the
-    season pass-attempt leader in nflverse's player-week stats. Keeps
-    the QB-availability dock from firing on a hurt backup."""
+    """(starters, qb_team): each team's usual QB — the season pass-
+    attempt leader per nflverse — and a name→team map for every QB
+    who has thrown. Data, not memory: keeps the QB-change dock from
+    firing on a hurt backup, and lets FanDuel's prop-implied starter
+    reveal a change the injury report doesn't."""
     import csv
     import io
     alias = {"WAS": "WSH", "LA": "LAR", "JAC": "JAX", "ARZ": "ARI"}
@@ -126,8 +128,8 @@ def fetch_qb_starters(season):
                              capture_output=True, check=True)
         rows = csv.DictReader(io.StringIO(out.stdout.decode()))
     except Exception:
-        return {}
-    att = {}
+        return {}, {}
+    att, qb_team = {}, {}
     for r in rows:
         if (r.get("position") != "QB"
                 or r.get("season_type", "REG") != "REG"):
@@ -140,7 +142,10 @@ def fetch_qb_starters(season):
             continue
         att.setdefault(t, {})
         att[t][n] = att[t].get(n, 0) + a
-    return {t: max(qbs, key=qbs.get) for t, qbs in att.items() if qbs}
+        if n:
+            qb_team[_norm_name(n)] = t
+    return ({t: max(qbs, key=qbs.get) for t, qbs in att.items() if qbs},
+            qb_team)
 
 
 TD_TAB = ("https://sbapi.pa.sportsbook.fanduel.com/api/event-page"
@@ -464,7 +469,15 @@ def build_snapshot():
                     rows.append(h)
     status_by_name = {_norm_name(r["name"]): r["status"]
                       for rows in inj_by_team.values() for r in rows}
-    starters = fetch_qb_starters(datetime.utcnow().year)
+    starters, qb_team = fetch_qb_starters(datetime.utcnow().year)
+    # FanDuel's passing props imply who actually starts — the book
+    # prices the real QB before injury reports catch up, and it also
+    # catches benchings the report never lists.
+    implied_qbs = {}
+    for c in cands:
+        if "Passing" in (c.get("type") or ""):
+            implied_qbs.setdefault(c["matchup"], set()).add(
+                _norm_name(c["player"]))
     for g in games:
         away, home = g["matchup"].split(" @ ")
         g["inj"] = {t: inj_by_team.get(t, [])[:4] for t in (away, home)
@@ -477,12 +490,16 @@ def build_snapshot():
         if wx:
             g["wx"] = wx
 
-    QB_DOCK = 4.0  # points: conservative end of the playbook's 3-7
+    QB_DOCK = 4.0  # validated on 793 changed-starter games, 2015-2026
+    #                (board/tune.py: docks 1-5 all beat none, 4.0 best)
 
-    def qb_dock(team):
-        """Dock only when the team's ACTUAL starter — the season pass-
-        attempt leader per nflverse — is Out or Doubtful. A hurt backup
-        is not a downgrade; Questionable stays the read's call."""
+    def qb_dock(team, mu):
+        """Dock a team starting someone other than its usual QB (the
+        season pass-attempt leader per nflverse). Two triggers: the
+        usual starter is injury-listed Out/Doubtful, or FanDuel's
+        passing props for the game imply a different QB for this team
+        — which catches benchings and unlisted changes. A hurt backup
+        never triggers it; Questionable alone stays the read's call."""
         qb = starters.get(team)
         if not qb:
             return 0.0
@@ -490,6 +507,10 @@ def build_snapshot():
             if (r["pos"] == "QB" and r["status"] in ("Out", "Doubtful")
                     and _norm_name(r["name"]) == _norm_name(qb)):
                 return QB_DOCK
+        implied = implied_qbs.get(mu, set())
+        mine = {q for q in implied if qb_team.get(q) == team}
+        if mine and _norm_name(qb) not in mine:
+            return QB_DOCK
         return 0.0
 
     def wx_shift(g):
@@ -527,7 +548,9 @@ def build_snapshot():
         with open(simlog_path, "a") as slf:
             for g in games:
                 away, home = g["matchup"].split(" @ ")
-                dh, da, ts = qb_dock(home), qb_dock(away), wx_shift(g)
+                mu = g["matchup"]
+                dh, da, ts = (qb_dock(home, mu), qb_dock(away, mu),
+                              wx_shift(g))
                 pred = model.predict(home, away, dock_home=dh,
                                      dock_away=da, total_shift=ts)
                 if dh or da or ts:
@@ -663,7 +686,7 @@ def build_snapshot():
     # Say what the model already weighed, so nobody double-counts it.
     for g in games:
         adj = g.get("adj") or {}
-        bits = [f"sims dock {t} {p:g} pts (starting QB Out/Doubtful)"
+        bits = [f"sims dock {t} {p:g} pts (QB change)"
                 for t, p in (adj.get("dock") or {}).items()]
         if adj.get("wx"):
             bits.append(f"weather trims the total {abs(adj['wx']):g} pts")

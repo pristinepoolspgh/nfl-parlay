@@ -58,3 +58,20 @@ Opponent adjustment did not help (adds noise at in-season samples).
 market gap (+.0120 Brier) quantifies what scores can't see — the
 ceiling the docks and the reads are attempting to recover; the live
 per-version grading tests whether they do.
+
+## 2026-09-24 (third pass) — parameter tuning and the QB-change dock
+
+board/tune.py, same 2,193-game closing-line harness, greedy with
+paired 95% CIs. Findings:
+- MARGIN_SD 13.2, Elo K 20, HFA 48: already optimal (no variant
+  significant).
+- Rest-day differential: no coefficient helps — the market prices it.
+- **QB-change dock: validated.** 793 games (2015-2026) where a team's
+  listed starter differed from its season's most-used QB. Docks of
+  1-4 pts all beat none; 4.0 optimal (Brier .2204 → .2175,
+  Δ −.0029 ±.0023; dock=2 Δ −.0023 ±.0012). Closes a quarter of the
+  gap to the closing line (.0120 → .0091).
+**Adopted (sim v5):** dock stays 4.0 and now also fires when
+FanDuel's prop-implied starter differs from the season's usual QB
+(catches benchings and unlisted changes), not only on Out/Doubtful
+injury listings. Constants unchanged.

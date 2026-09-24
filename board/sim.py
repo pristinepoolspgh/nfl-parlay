@@ -48,12 +48,19 @@ class Model:
     # v2: Elo margin blended with nflverse EPA differential.
     # v3: caller-supplied availability dock (starting QB Out/Doubtful)
     #     and weather shift on totals weigh on the prediction.
-    # v4: EPA blend CUT after board/backtest.py replayed 2025-26
-    #     (224 games): pure-Elo margins beat every blend weight on
-    #     Brier (.2245 vs .2247-.2516) and MAE, and ran near the
-    #     market itself on logged wk2 favorites (.2438 vs .2416).
-    #     Early-season EPA is noise. Docks and weather stay.
-    VERSION = 4
+    # v4: EPA blend CUT after board/backtest.py (12 seasons vs the
+    #     closing line): no blend weight beat pure Elo; heavier ones
+    #     significantly worse. Docks and weather stay.
+    # v5: QB-change dock VALIDATED and broadened. board/tune.py, 793
+    #     changed-starter games 2015-2026: docking 3-4 pts beats no
+    #     dock with CI excluding zero; 4.0 optimal, closing a quarter
+    #     of the gap to the market (.0120 -> .0091 Brier). Live dock
+    #     now also fires when FanDuel's prop-implied starter differs
+    #     from the season's usual QB (benchings, unlisted changes),
+    #     not only on Out/Doubtful listings. SD 13.2 / K 20 / HFA 48
+    #     re-confirmed optimal in the same run; rest days added
+    #     nothing (market prices them).
+    VERSION = 5
 
     def __init__(self, path=ELO_PATH):
         d = json.load(open(path))
