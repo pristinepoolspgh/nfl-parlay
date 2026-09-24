@@ -47,8 +47,13 @@ EPA_BLEND_K = 6.0  # games until EPA carries half the margin estimate
 class Model:
     # v2: Elo margin blended with nflverse EPA differential.
     # v3: caller-supplied availability dock (starting QB Out/Doubtful)
-    #     and weather shift on totals now weigh on the prediction.
-    VERSION = 3
+    #     and weather shift on totals weigh on the prediction.
+    # v4: EPA blend CUT after board/backtest.py replayed 2025-26
+    #     (224 games): pure-Elo margins beat every blend weight on
+    #     Brier (.2245 vs .2247-.2516) and MAE, and ran near the
+    #     market itself on logged wk2 favorites (.2438 vs .2416).
+    #     Early-season EPA is noise. Docks and weather stay.
+    VERSION = 4
 
     def __init__(self, path=ELO_PATH):
         d = json.load(open(path))
@@ -67,20 +72,9 @@ class Model:
         ra = self.ratings.get(home, 1500.0) + (0.0 if neutral else HFA)
         rb = self.ratings.get(away, 1500.0)
         mu_margin = (ra - rb) / 25.0
-        # Blend in the efficiency view where nflverse EPA covers both
-        # teams: margin ≈ (offA − offB) + (defB_allowed − defA_allowed),
-        # EPA/game being roughly points, plus home field. The weight
-        # grows with sample (n/(n+K)) because early-season EPA is
-        # small-sample noise; Elo carries the rest. Neither term sees
-        # injuries — that stays the reads' job.
-        eh, ea = self.epa.get(home), self.epa.get(away)
-        if eh and ea and eh.get("n") and ea.get("n"):
-            hfa_pts = 0.0 if neutral else HFA / 25.0
-            m_epa = ((eh["off"] - ea["off"])
-                     + (ea["def"] - eh["def"]) + hfa_pts)
-            n_min = min(eh["n"], ea["n"])
-            w = n_min / (n_min + EPA_BLEND_K)
-            mu_margin = (1.0 - w) * mu_margin + w * m_epa
+        # No EPA blend: backtesting showed it degraded accuracy at
+        # every weight tried (see VERSION note). self.epa stays loaded
+        # for the reads to cite; it just doesn't move the margin.
         mu_margin += dock_away - dock_home
         sh = self.scoring.get(home, {})
         sa = self.scoring.get(away, {})
