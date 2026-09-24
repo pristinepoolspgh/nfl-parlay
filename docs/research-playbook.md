@@ -11,12 +11,21 @@
 >   player records on demand (board/player.py, ESPN athlete APIs), CLV raw
 >   material (close.jsonl), result ledgers (memory/), Elo + score sims
 >   (board/elo.py, board/sim.py).
+> - **Also wired (Sep 24):** nflverse team stats — direct release-asset
+>   downloads pass the proxy even though GitHub's HTML pages don't —
+>   via board/epa.py (offensive EPA/game + CPOE per team); Rotowire's
+>   NFL news feed as a third news source in the board's "news" field,
+>   which relays beat-writer/insider reporting (often X-sourced, with
+>   attribution) minutes after it breaks — the practical substitute for
+>   direct X access.
 > - **Reachable from this sandbox, not yet wired:** nflpenalties.com
->   (crew flag rates), rbsdm.com (page loads; its data is a JS app).
-> - **Not reachable / not usable here:** NFL Next Gen Stats API (401 without
->   keys), nflverse GitHub data releases (proxy-blocked), all paid tools
->   (OddsJam, PropFinder, Outlier, PFF, etc.), X/Twitter accounts (login
->   wall). Treat any claim that depends on them as unverifiable from here.
+>   (crew flag rates), rbsdm.com (page loads; its data is a JS app;
+>   the same numbers come from nflverse), nflverse play-by-play (large;
+>   would enable defensive EPA).
+> - **Not reachable / not usable here:** NFL Next Gen Stats API (401
+>   without keys), all paid tools (OddsJam, PropFinder, Outlier, PFF,
+>   etc.), X/Twitter directly (login wall; API read access is a paid
+>   tier). Treat any claim that depends on them as unverifiable here.
 > - The weekly cadence in Part 5.6 is approximated by the Routines:
 >   Tue morning (grade + roll the week), Thu/Mon night (pregame read),
 >   Sun 11 AM–7 PM ET every 2 hours (reads, refreshes, settlement), plus

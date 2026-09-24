@@ -34,6 +34,37 @@ INJ_URL = ("https://site.api.espn.com/apis/site/v2/sports/football/nfl/"
            "injuries")
 POS_RANK = {"QB": 0, "RB": 1, "WR": 2, "TE": 3}
 
+ROTO_URL = "https://www.rotowire.com/football/news.php"
+ROTO_ABBR = {"WAS": "WSH", "JAC": "JAX", "LA": "LAR", "ARZ": "ARI"}
+
+
+def fetch_rotowire():
+    """Rotowire's NFL news feed: team-tagged player items that relay
+    beat-writer and insider reporting (often X-sourced) minutes after
+    it breaks — practice participation, injuries, role changes. Team
+    comes from the logo, player and headline from the item itself."""
+    by_team = {}
+    try:
+        out = subprocess.run(["curl", "-sSgL", "--max-time", "25",
+                              ROTO_URL],
+                             capture_output=True, check=True)
+        text = out.stdout.decode("utf-8", "replace")
+    except Exception:
+        return by_team
+    pat = re.compile(
+        r'news-update__logo" src="[^"]*?/([A-Z]{2,3})\.svg[^>]*>.*?'
+        r'news-update__player-link"[^>]*>([^<]+)</a>.*?'
+        r'news-update__headline"[^>]*>([^<]+)</a>', re.S)
+    for ab, player, head in pat.findall(text):
+        ab = ROTO_ABBR.get(ab, ab)
+        rows = by_team.setdefault(ab, [])
+        h = (f"{htmllib.unescape(player).strip()}: "
+             f"{htmllib.unescape(head).strip()}")
+        if h not in rows and len(rows) < 3:
+            rows.append(h)
+    return by_team
+
+
 NFL_NEWS_URL = "https://www.nfl.com/news/"
 NICKNAMES = {
     "Cardinals": "ARI", "Falcons": "ATL", "Ravens": "BAL", "Bills": "BUF",
@@ -447,11 +478,12 @@ def build_snapshot():
     # Injury layer: attach key injuries per game, tag injured prop players.
     inj_by_team = fetch_injuries()
     news_by_team = fetch_news()
-    for ab, heads in fetch_nfl_news().items():
-        rows = news_by_team.setdefault(ab, [])
-        for h in heads:
-            if h not in rows and len(rows) < 3:
-                rows.append(h)
+    for extra in (fetch_rotowire, fetch_nfl_news):
+        for ab, heads in extra().items():
+            rows = news_by_team.setdefault(ab, [])
+            for h in heads:
+                if h not in rows and len(rows) < 3:
+                    rows.append(h)
     status_by_name = {_norm_name(r["name"]): r["status"]
                       for rows in inj_by_team.values() for r in rows}
     for g in games:
