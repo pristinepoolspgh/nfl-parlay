@@ -753,7 +753,18 @@ function render(){
     if (t){ ticketLegs = t.legs; shortfall = !t.reachable; }
     else shortfall = true;
   } else {
-    ticketLegs = D.games.slice(0, legs - props).map(g => mlLeg(g, g.sides[0]))
+    // Auto ticket: the market's safest favorites, discounted where our
+    // own graded model reads the price as rich (half weight — the model
+    // is young and only ever penalizes, never inflates). Better payout
+    // breaks ties between equals.
+    const score = g => {
+      const p = g.sides[0].p;
+      const e = g.ep !== undefined ? Math.min(0, g.ep - p) : 0;
+      return p + 0.5 * e;
+    };
+    const ranked = [...D.games].sort((a, b) =>
+      score(b) - score(a) || dec(b.sides[0].odds) - dec(a.sides[0].odds));
+    ticketLegs = ranked.slice(0, legs - props).map(g => mlLeg(g, g.sides[0]))
       .concat(D.props.filter(c => c.inj !== "Out" && c.inj !== "Doubtful")
         .slice(0, props).map(propLeg));
   }
