@@ -104,3 +104,24 @@ mostly planned switches, offseason moves, and returns the market has
 already priced. **Adopted (sim v6): the dock is gated to week 5+.**
 The four week-3 docks then on the live board (WSH, CHI, NYG, MIN)
 were removed the same day.
+
+## 2026-09-24 (fifth pass) — residual predictiveness (reviewer's P6)
+
+board/residual_test.py: logistic regression of home-win outcome on
+logit(closing prob) + [logit(model) − logit(closing prob)], sim v6
+margins (dock in wk5+ only), same scored set.
+
+| set | n | beta(residual) | z | LR stat |
+|---|---|---|---|---|
+| weeks 5+ (primary) | 2,193 | −0.001 ±0.118 | −0.01 | 0.00 |
+| weeks 2+ | 2,728 | +0.043 ±0.107 | +0.40 | 0.16 |
+
+**The model's disagreements with the closing line predict nothing on
+game sides/totals.** Consistent with the dock finding: the dock made
+the model less wrong, not informative beyond the market (which prices
+QB changes harder than 4 pts). Consequences adopted: the board's
+"Sims' calls" section now carries this result in its header; sim
+disagreement is presented as research, not edge, until a non-FanDuel
+fair price exists (multi-book consensus) and this same test passes on
+some market. The test is rerunnable in one command and should gate
+any future "the model sees value" claim.
