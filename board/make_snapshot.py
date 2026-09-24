@@ -538,6 +538,31 @@ def build_snapshot():
                            else round(1.0 - pred["p_home"], 4))
                 g["proj"] = {"h": round(pred["proj"]["home"]),
                              "a": round(pred["proj"]["away"])}
+                # Sim-price every alt rung of this game so the ticket
+                # builders can hear the model when choosing legs.
+                mu_m, mu_t = pred["mu_margin"], pred["mu_total"]
+                for r in alts.get(g["matchup"], []):
+                    desc = r.get("desc", "")
+                    m_tot = re.match(r"^(Over|Under) ([\d.]+) pts$", desc)
+                    m_spr = re.match(r"^([A-Z]{2,3}) ([+-][\d.]+)$", desc)
+                    m_ml = re.match(r"^([A-Z]{2,3}) ML$", desc)
+                    sp = None
+                    if m_tot:
+                        po = model.p_over(mu_t, float(m_tot.group(2)))
+                        sp = po if m_tot.group(1) == "Over" else 1.0 - po
+                    elif m_spr:
+                        team, ln = m_spr.group(1), float(m_spr.group(2))
+                        if team == home:
+                            sp = model.p_cover(mu_m, ln)
+                        elif team == away:
+                            sp = 1.0 - model.p_cover(mu_m, -ln)
+                    elif m_ml:
+                        if m_ml.group(1) == home:
+                            sp = pred["p_home"]
+                        elif m_ml.group(1) == away:
+                            sp = 1.0 - pred["p_home"]
+                    if sp is not None:
+                        r["sp"] = round(sp, 4)
                 key = (g["start"][:10], g["matchup"])
                 if key not in logged:
                     slf.write(json.dumps({

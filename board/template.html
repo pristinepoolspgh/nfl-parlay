@@ -475,6 +475,12 @@ const am = p => p<=0||p>=1 ? "n/a" :
   p>=.5 ? "−"+Math.round(p/(1-p)*100) : "+"+Math.round((1-p)/p*100);
 const fd = o => o<0 ? "−"+Math.abs(o) : "+"+o;
 const dec = o => o>0 ? 1+o/100 : 1+100/(-o);
+// Effective probability for BUILDER CHOICES: market de-vigged p,
+// penalized at half weight where the sims priced this exact rung
+// lower (never inflated by agreement). Displayed odds and payout
+// guarantees stay pure market numbers.
+const pe = r => r.sp !== undefined
+  ? r.p + 0.5 * Math.min(0, r.sp - r.p) : r.p;
 const decToAm = d => d>=2 ? "+"+Math.round((d-1)*100) : "−"+Math.round(100/(d-1));
 const pct = p => (p*100).toFixed(1)+"%";
 const key = l => l.market+":"+l.sel;
@@ -561,10 +567,11 @@ function buildTarget(target, n){
         const i = idx[j];
         for (let i2 = 0; i2 < i; i2++){
           const r = l.rungs[i2].p / l.rungs[i].p;
-          if (cur * r < target) continue;
+          if (cur * r < target) continue;  // promise stays market-math
           const q = dec(l.rungs[i2].odds) / dec(l.rungs[i].odds);
           if (q <= 1) continue;
-          const v = Math.log(q) / Math.max(-Math.log(r), 1e-9);
+          const rE = pe(l.rungs[i2]) / pe(l.rungs[i]);
+          const v = Math.log(q) / Math.max(-Math.log(rE), 1e-9);
           if (!best || v > best.v) best = {v, j, i2};
         }
       });
@@ -635,7 +642,7 @@ function payWalk(ladders, targetDec){
       for (let i2 = 0; i2 < i; i2++){
         const q = dec(l.rungs[i2].odds) / dec(l.rungs[i].odds);
         if (q <= 1) continue;
-        const r = l.rungs[i2].p / l.rungs[i].p;
+        const r = pe(l.rungs[i2]) / pe(l.rungs[i]);
         if (curD * q >= targetDec){
           if (!fin || r > fin.r) fin = {r, j, i2};
         } else {
@@ -655,6 +662,7 @@ function payWalk(ladders, targetDec){
   const legs = pruneDrag(legsOf(ladders, idx), targetDec);
   return {reachable: true,
           combined: legs.reduce((a,l) => a*l.p, 1),
+          eff: legs.reduce((a,l) => a*pe(l), 1),
           decOdds: legs.reduce((a,l) => a*dec(l.odds), 1),
           legs};
 }
@@ -695,6 +703,7 @@ function evenBuild(targetDec, k){
   const d = out.reduce((a, l) => a * dec(l.odds), 1);
   return {reachable: d >= targetDec,
           combined: out.reduce((a, l) => a * l.p, 1),
+          eff: out.reduce((a, l) => a * pe(l), 1),
           decOdds: d, legs: out};
 }
 
@@ -706,7 +715,12 @@ function buildPayout(targetDec, n){
   const consider = t => {
     if (!t) return;
     if (t.reachable){
-      if (!best || t.combined > best.combined) best = t;
+      // Compare on sim-penalized probability: between two builds that
+      // both pay the goal, the one riding rungs the model believes in
+      // wins the card.
+      const score = t.eff !== undefined ? t.eff : t.combined;
+      const bs = best && (best.eff !== undefined ? best.eff : best.combined);
+      if (!best || score > bs) best = t;
     } else if (!fallback || t.decOdds > fallback.decOdds){
       fallback = t;
     }
