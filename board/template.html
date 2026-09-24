@@ -423,6 +423,9 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
   <h2>The board <small>&middot; tap a price to build your own &middot; model notes in plain words under flagged games</small></h2>
   <section class="card"><ul class="rows" id="slate"></ul></section>
 
+  <h2 id="simhead" hidden>Sims&rsquo; calls <small>&middot; where the model most disagrees with the price &middot; the market usually wins this argument &mdash; these are the exceptions the sims insist on</small></h2>
+  <section class="card" id="simcard" hidden><ul class="rows" id="simboard"></ul></section>
+
   <h2>Props <small>&middot; strongest priced sides, one per player</small></h2>
   <section class="card"><ul class="rows" id="propboard"></ul></section>
 
@@ -520,6 +523,12 @@ D.props.forEach(c => {
   ALL_LEGS[c.market + ":" + c.sel] = {
     desc: `${c.player} anytime TD`, team: null, p: c.p, odds: c.odds,
     market: c.market, sel: c.sel, sub: "anytime TD · " + c.matchup};
+});
+(D.simbets || []).forEach(r => {
+  const k = r.market + ":" + r.sel;
+  if (!ALL_LEGS[k]) ALL_LEGS[k] = {
+    desc: r.desc, team: (r.desc || "").split(" ")[0], p: r.p,
+    odds: r.odds, market: r.market, sel: r.sel, sub: r.matchup};
 });
 
 // Priced props as ladders for the suggestion builders: the safer side
@@ -1036,6 +1045,17 @@ $("propboard").innerHTML = D.props.map(c => {
       <span class="t">${c.type} · ${c.matchup}</span></span>
     <span class="sides">${btn("over")}${btn("under")}</span></li>`;
 }).join("");
+
+if ((D.simbets || []).length){
+  $("simhead").hidden = false;
+  $("simcard").hidden = false;
+  $("simboard").innerHTML = D.simbets.map(r => `
+    <li style="--tc:var(--money)"><span class="tab"></span>
+      <span><span class="m">${r.desc}</span><br>
+        <span class="t">${r.matchup} · sims ${(r.sp*100).toFixed(0)}% vs market ${(r.p*100).toFixed(0)}%</span></span>
+      <span class="sides"><button class="side" data-k="${r.market}:${r.sel}">
+        ${fd(r.odds)}<small>${pct(r.p)}</small></button></span></li>`).join("");
+}
 
 if ((D.tds || []).length){
   $("tdhead").hidden = false;

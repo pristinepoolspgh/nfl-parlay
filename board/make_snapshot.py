@@ -505,6 +505,7 @@ def build_snapshot():
             s -= 1.0
         return round(s, 1)
 
+    simbets = []
     # Model layer: run the simulator on each game — projected score,
     # win probability, and the prediction log that grades the model.
     elo_path = os.path.join(os.path.dirname(os.path.dirname(
@@ -572,6 +573,21 @@ def build_snapshot():
                         "p_home": pred["p_home"],
                         "v": getattr(simmod.Model, "VERSION", 1)}) + "\n")
                     logged.add(key)
+
+        # The sims' strongest calls: rungs where the model's own price
+        # beats the market's by the most. Shown, tappable, and honest
+        # about the record — the closing line usually wins this
+        # argument (docs/backtests.md), so these are the exceptions
+        # the model insists on, not gospel.
+        for g in games:
+            cand = [r for r in alts.get(g["matchup"], [])
+                    if "sp" in r and r["p"] >= 0.2
+                    and r["sp"] - r["p"] >= 0.05]
+            cand.sort(key=lambda r: r["p"] - r["sp"])
+            for r in cand[:2]:
+                simbets.append({**r, "matchup": g["matchup"]})
+        simbets.sort(key=lambda r: r["p"] - r["sp"])
+        simbets = simbets[:10]
 
     # Closing-line log: keep the latest pregame sighting per game (CLV).
     close_path = os.path.join(os.path.dirname(elo_path), "close.jsonl")
@@ -662,7 +678,7 @@ def build_snapshot():
              else datetime.utcnow()).strftime("%b %d, %Y %I:%M %p ET")
     return {"generated": stamp, "week": week, "games": games,
             "props": props[:24], "tds": tds, "alts": alts,
-            "scores": scores, "live": live}
+            "simbets": simbets, "scores": scores, "live": live}
 
 
 def log_pregame(snap):
