@@ -659,18 +659,61 @@ function payWalk(ladders, targetDec){
           legs};
 }
 
+// Spread build: aim every leg at roughly the k-th root of the goal,
+// taking each ladder's highest-probability rung that still carries its
+// share. Spreading a payout usually beats concentrating it in one
+// longshot, and the ticket keeps the leg count you asked for.
+function evenBuild(targetDec, k){
+  // Coarse ladders (few rungs, e.g. props) go first so the finely
+  // graded alt ladders can absorb the remainder precisely; middle
+  // ladders take the rung CLOSEST to their share, the last one the
+  // smallest rung that still clears what's left.
+  const ladders = payLadders(k)
+    .sort((a, b) => a.rungs.length - b.rungs.length);
+  if (!ladders.length) return null;
+  let rem = targetDec;
+  const legs = ladders.map((l, i) => {
+    const last = i === ladders.length - 1;
+    const need = last ? Math.max(rem, 1.0001)
+      : Math.pow(Math.max(rem, 1.0001), 1 / (ladders.length - i));
+    let pick = l.rungs[0];
+    if (last){
+      for (let j = l.rungs.length - 1; j >= 0; j--){
+        if (dec(l.rungs[j].odds) >= need){ pick = l.rungs[j]; break; }
+      }
+    } else {
+      let bd = Infinity;
+      for (const r of l.rungs){
+        const gap = Math.abs(dec(r.odds) - need);
+        if (gap < bd){ bd = gap; pick = r; }
+      }
+    }
+    rem /= dec(pick.odds);
+    return {...pick, sub: l.mu, team: (pick.desc || "").split(" ")[0]};
+  });
+  const out = pruneDrag(legs, targetDec);
+  const d = out.reduce((a, l) => a * dec(l.odds), 1);
+  return {reachable: d >= targetDec,
+          combined: out.reduce((a, l) => a * l.p, 1),
+          decOdds: d, legs: out};
+}
+
 function buildPayout(targetDec, n){
   const total = Object.keys(D.alts).length
     + Math.min(props, propLadders().length);
   if (!total) return null;
   let best = null, fallback = null;
-  for (let k = Math.min(n, total); k <= total; k++){
-    const t = payWalk(payLadders(k), targetDec);
+  const consider = t => {
+    if (!t) return;
     if (t.reachable){
       if (!best || t.combined > best.combined) best = t;
     } else if (!fallback || t.decOdds > fallback.decOdds){
       fallback = t;
     }
+  };
+  for (let k = Math.min(n, total); k <= total; k++){
+    consider(payWalk(payLadders(k), targetDec));
+    consider(evenBuild(targetDec, k));
   }
   return best || fallback;
 }
@@ -798,7 +841,10 @@ function render(){
   } else if (payMode){
     const v = VERDICTS.find(v => combined >= v[0]);
     const grew = ticketLegs.length > legs
-      ? ` · grew to ${ticketLegs.length} legs` : "";
+      ? ` · grew to ${ticketLegs.length} legs`
+      : ticketLegs.length < legs
+      ? ` · best build needs only ${ticketLegs.length} — extra legs just feed the vig`
+      : "";
     $("vlabel").textContent = fd(pay) + " ticket · " + v[1].toLowerCase();
     $("vline").textContent = `most likely build paying it — posted ${decToAm(fdDec)}${grew}`;
   } else if (target > 0 && shortfall){
