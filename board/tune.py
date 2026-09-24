@@ -29,7 +29,7 @@ GAMES_URL = ("https://raw.githubusercontent.com/nflverse/nfldata/"
              "master/data/games.csv")
 ALIAS = {"SD": "LAC", "OAK": "LV", "STL": "LAR", "LA": "LAR",
          "WAS": "WSH", "JAC": "JAX", "ARZ": "ARI"}
-SCORE_FROM, WARM_FROM, WEEK_FROM = 2015, 2006, 5
+SCORE_FROM, WARM_FROM, WEEK_FROM = 2015, 2006, 2  # main grids slice wk5+
 
 
 def curl(url):
@@ -97,22 +97,30 @@ def replay(games, K, HFA, regress=1 / 3):
                 and g["hml"] and g["aml"]):
             ra = ratings.get(g["home"], 1500.0) + (0 if g["neutral"] else HFA)
             rb = ratings.get(g["away"], 1500.0)
-            newqb_h = newqb_a = False
+            flags = {}
             for side, team, qb in (("h", g["home"], g["hqb"]),
                                    ("a", g["away"], g["aqb"])):
+                # Strict rule: usual = modal starter season-to-date,
+                # min 3 PRIOR starts (counter updates after this row,
+                # so there is no look-ahead).
+                usual = usual_fb = None
                 c = qb_starts.get((g["season"], team))
-                if qb and c and sum(c.values()) >= 3:
-                    usual, _ = c.most_common(1)[0]
-                    if qb != usual:
-                        if side == "h":
-                            newqb_h = True
-                        else:
-                            newqb_a = True
-            rows.append({"m": (ra - rb) / 25.0,
+                if c and sum(c.values()) >= 3:
+                    usual = usual_fb = c.most_common(1)[0][0]
+                else:
+                    # Fallback for early weeks: last season's modal
+                    # starter (also strictly pre-kickoff information).
+                    cp = qb_starts.get((g["season"] - 1, team))
+                    if cp and sum(cp.values()) >= 3:
+                        usual_fb = cp.most_common(1)[0][0]
+                flags[side] = (bool(qb and usual and qb != usual),
+                               bool(qb and usual_fb and qb != usual_fb))
+            rows.append({"m": (ra - rb) / 25.0, "wk": g["week"],
                          "actual": g["hs"] - g["as"],
                          "pm": devig(g["hml"], g["aml"]),
                          "dr": g["hrest"] - g["arest"],
-                         "nh": newqb_h, "na": newqb_a})
+                         "nh": flags["h"][0], "na": flags["a"][0],
+                         "nh2": flags["h"][1], "na2": flags["a"][1]})
         # update
         ra = ratings.setdefault(g["home"], 1500.0)
         rb = ratings.setdefault(g["away"], 1500.0)
@@ -133,13 +141,13 @@ def replay(games, K, HFA, regress=1 / 3):
     return rows
 
 
-def brier(rows, sd, rest_c=0.0, qb_dock=0.0):
+def brier(rows, sd, rest_c=0.0, qb_dock=0.0, keys=("nh", "na")):
     bs = []
     for r in rows:
         m = r["m"] + rest_c * r["dr"]
-        if r["nh"]:
+        if r[keys[0]]:
             m -= qb_dock
-        if r["na"]:
+        if r[keys[1]]:
             m += qb_dock
         p = _phi(m / sd)
         bs.append((p - (1.0 if r["actual"] > 0 else 0.0)) ** 2)
@@ -156,7 +164,9 @@ def ci_vs(bs, base):
 
 def main():
     games = load_games()
-    base_rows = replay(games, 20.0, 48.0)
+    all_rows = replay(games, 20.0, 48.0)
+    base_rows = [r for r in all_rows if r["wk"] >= 5]
+    early_rows = [r for r in all_rows if 2 <= r["wk"] <= 4]
     n = len(base_rows)
     mkt = sum((r["pm"] - (1.0 if r["actual"] > 0 else 0.0)) ** 2
               for r in base_rows) / n
@@ -180,7 +190,7 @@ def main():
     for K in (15.0, 20.0, 25.0):
         for HFA in (30.0, 48.0, 65.0):
             rows = base_rows if (K, HFA) == (20.0, 48.0) \
-                else replay(games, K, HFA)
+                else [r for r in replay(games, K, HFA) if r["wk"] >= 5]
             bs = brier(rows, best_sd)
             m, ci = ci_vs(bs, base2)
             b = sum(bs) / n
@@ -189,7 +199,8 @@ def main():
             if b < bestb and abs(m) > ci:
                 bestb, best_kh = b, (K, HFA)
     print(f"  -> adopt K={best_kh[0]} HFA={best_kh[1]}")
-    rows = base_rows if best_kh == (20.0, 48.0) else replay(games, *best_kh)
+    rows = base_rows if best_kh == (20.0, 48.0) \
+        else [r for r in replay(games, *best_kh) if r["wk"] >= 5]
 
     print("\n3) Rest coefficient (pts per rest-day differential)")
     base3 = brier(rows, best_sd)
@@ -216,8 +227,27 @@ def main():
         if b < bestb and abs(m) > ci:
             bestb, best_d = b, d
     print(f"  -> adopt qb dock={best_d}")
-    print(f"\nfinal Brier {bestb:.4f} vs market {mkt:.4f} "
+    print(f"\nfinal wk5+ Brier {bestb:.4f} vs market {mkt:.4f} "
           f"(gap {bestb - mkt:+.4f})")
+
+    print("\n5) QB dock in EARLY WEEKS (2-4), usual = season-to-date"
+          "\n   modal starter (min 3 starts) else LAST season's modal"
+          "\n   starter — strictly pre-kickoff information either way")
+    ne = len(early_rows)
+    nq2 = sum(1 for r in early_rows if r["nh2"] or r["na2"])
+    print(f"  {ne} early-week games, {nq2} with a changed starter")
+    base5 = brier(early_rows, best_sd, keys=("nh2", "na2"))
+    for d in (0.0, 2.0, 3.0, 4.0, 5.0):
+        bs = brier(early_rows, best_sd, qb_dock=d, keys=("nh2", "na2"))
+        m, ci = ci_vs(bs, base5)
+        print(f"  dock={d:<4} Brier {sum(bs)/ne:.4f}  Δ {m:+.4f} ±{ci:.4f}")
+    print("\n   same fallback rule on wk5+ (vs strict-rule baseline):")
+    base6 = brier(rows, best_sd)
+    for d in (0.0, 4.0):
+        bs = brier(rows, best_sd, qb_dock=d, keys=("nh2", "na2"))
+        m, ci = ci_vs(bs, base6)
+        print(f"  dock={d:<4} Brier {sum(bs)/len(rows):.4f}  "
+              f"Δ {m:+.4f} ±{ci:.4f}")
 
 
 if __name__ == "__main__":

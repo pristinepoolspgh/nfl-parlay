@@ -60,7 +60,14 @@ class Model:
     #     not only on Out/Doubtful listings. SD 13.2 / K 20 / HFA 48
     #     re-confirmed optimal in the same run; rest days added
     #     nothing (market prices them).
-    VERSION = 5
+    # v6: dock GATED to week 5+ after an external review challenged
+    #     the validation for leakage. No leakage (the backtest's
+    #     "usual" QB is strictly prior information), but re-testing
+    #     weeks 2-4 (250 changed-starter games, prior-season fallback
+    #     for "usual") showed every dock size grades WORSE there —
+    #     early changes are mostly planned and already priced. The
+    #     week-5+ result (-.0029 Brier at 4.0) reproduces exactly.
+    VERSION = 6
 
     def __init__(self, path=ELO_PATH):
         d = json.load(open(path))

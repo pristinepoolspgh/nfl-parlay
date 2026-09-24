@@ -492,6 +492,9 @@ def build_snapshot():
 
     QB_DOCK = 4.0  # validated on 793 changed-starter games, 2015-2026
     #                (board/tune.py: docks 1-5 all beat none, 4.0 best)
+    #                WEEKS 2-4 FAILED validation (250 games: every dock
+    #                graded worse — early changes are mostly planned
+    #                and already priced), so the dock is gated to wk 5+.
 
     def qb_dock(team, mu):
         """Dock a team starting someone other than its usual QB (the
@@ -499,9 +502,11 @@ def build_snapshot():
         usual starter is injury-listed Out/Doubtful, or FanDuel's
         passing props for the game imply a different QB for this team
         — which catches benchings and unlisted changes. A hurt backup
-        never triggers it; Questionable alone stays the read's call."""
+        never triggers it; Questionable alone stays the read's call.
+        Gated to week 5+: the only regime where the backtest validates
+        it. Earlier weeks leave QB changes to the read's judgment."""
         qb = starters.get(team)
-        if not qb:
+        if not qb or (week or 0) < 5:
             return 0.0
         for r in inj_by_team.get(team, []):
             if (r["pos"] == "QB" and r["status"] in ("Out", "Doubtful")

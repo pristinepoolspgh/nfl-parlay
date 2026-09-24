@@ -75,3 +75,32 @@ paired 95% CIs. Findings:
 FanDuel's prop-implied starter differs from the season's usual QB
 (catches benchings and unlisted changes), not only on Out/Doubtful
 injury listings. Constants unchanged.
+
+## 2026-09-24 (fourth pass) — external review challenge: QB-dock leakage?
+
+A reviewer asked whether the 793-game QB-dock validation leaked future
+information ("season pass-attempt leader" computed over the full
+season). **Answer: no leakage** — in board/tune.py the "usual" QB is
+the modal starter over strictly PRIOR games (counter updates after
+each prediction, min 3 prior starts); the wk5+ result reproduces
+exactly (−.0029 ±.0023 at dock=4). The README's loose wording
+described the live rule, not the backtest's; corrected.
+
+**But the challenge exposed a real regime mismatch:** the live board
+was docking week-3 games while the validation only covered changes
+with ≥3 prior same-season starts (i.e., week 5+). Extending the test
+to weeks 2–4 (250 changed-starter games, "usual" falling back to last
+season's modal starter — still strictly pre-kickoff information):
+
+| dock | Brier  | Δ vs none (95% CI) |
+|------|--------|--------------------|
+| 0    | .2306  | baseline           |
+| 2    | .2313  | +.0007 ±.0027      |
+| 4    | .2342  | +.0036 ±.0054      |
+| 5    | .2363  | +.0057 ±.0066      |
+
+Every early-week dock grades worse: September starter changes are
+mostly planned switches, offseason moves, and returns the market has
+already priced. **Adopted (sim v6): the dock is gated to week 5+.**
+The four week-3 docks then on the live board (WSH, CHI, NYG, MIN)
+were removed the same day.

@@ -72,11 +72,19 @@ Full notes in `board/sim.py`'s header; evidence in `docs/backtests.md`.
   outdoors.
 - **v4** EPA blend removed (see v2). SD 13.2 / K 20 / HFA 48 later
   re-confirmed optimal by grid search; rest days tested, add nothing.
-- **v5 (current)** QB-change dock **validated**: 793 changed-starter games
+- **v5** QB-change dock **validated**: 793 changed-starter games
   2015–2026, docks 1–4 pts all beat none with 95% CI excluding zero, 4.0
   optimal — closes a quarter of the model's gap to the closing line. Dock
-  now also fires when FanDuel's prop-implied starter differs from the
-  usual QB (catches benchings the injury report never lists).
+  also fires when FanDuel's prop-implied starter differs from the
+  usual QB (catches benchings the injury report never lists). Precision
+  note: the backtest's "usual" QB is the modal starter over strictly
+  prior games (no look-ahead); the live rule approximates it with the
+  season-to-date pass-attempt leader.
+- **v6 (current)** dock **gated to week 5+** after an external review
+  challenged the validation. No leakage found, but re-testing weeks 2–4
+  (250 changed-starter games) showed every dock size grades worse there
+  — early changes are mostly planned and already priced. Full tables in
+  `docs/backtests.md`.
 
 **Honest standing:** the closing line is better than the model
 (Brier .2084 vs .2175 on the backtest). The board's "Sims' calls" section
