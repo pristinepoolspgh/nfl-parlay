@@ -578,6 +578,29 @@ function buildTarget(target, n){
             sub: l.mu, team: (l.rungs[idx[j]].desc||"").split(" ")[0]}))};
 }
 
+// A leg shorter than about −2000 multiplies the payout by ~1, but its
+// de-vigged probability still costs a real chance of losing the whole
+// ticket — pure drag. Drop such legs when the ticket still clears its
+// goal without them (keeping at least one leg).
+const PRUNE_DEC = 1.05;
+function pruneDrag(legs, minDec = 0){
+  const out = [...legs];
+  for (;;){
+    let j = -1, dj = Infinity;
+    out.forEach((l, i) => {
+      const d = dec(l.odds);
+      if (d <= PRUNE_DEC && d < dj){ dj = d; j = i; }
+    });
+    if (j < 0 || out.length <= 1) break;
+    if (minDec){
+      const total = out.reduce((a,l) => a*dec(l.odds), 1);
+      if (total / dj < minDec) break;
+    }
+    out.splice(j, 1);
+  }
+  return out;
+}
+
 // Ladders for payout mode: alt rungs plus the underdog moneyline.
 function payLadders(n){
   const dogs = {};
@@ -629,8 +652,11 @@ function payWalk(ladders, targetDec){
           / dec(ladders[mv.j].rungs[idx[mv.j]].odds);
     idx[mv.j] = mv.i2;
   }
-  return {reachable: true, combined: curP, decOdds: curD,
-          legs: legsOf(ladders, idx)};
+  const legs = pruneDrag(legsOf(ladders, idx), targetDec);
+  return {reachable: true,
+          combined: legs.reduce((a,l) => a*l.p, 1),
+          decOdds: legs.reduce((a,l) => a*dec(l.odds), 1),
+          legs};
 }
 
 function buildPayout(targetDec, n){
