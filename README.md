@@ -1,73 +1,190 @@
-# nfl-parlay
+# Parlay Board — system handoff & audit guide
 
-NFL slate + safest-parlay builder CLI. Pulls the day's NFL games from ESPN's
-public scoreboard API, strips the bookmaker's vig out of the moneylines to get
-honest win probabilities, and builds the safest N-leg parlay — telling you
-plainly whether your target hit-rate is achievable and what a fair ticket pays.
+Personal NFL betting-analysis product for Jonathan Mehalic. This README is
+written for a **reviewer doing a check-and-balance pass**: what exists, what
+it claims, and how to verify every claim independently. Built Sep 20–24, 2026
+by Claude (Claude Code session); everything below is reproducible from this
+repo.
 
-No dependencies, no API key. Python 3.6+ (3.9+ for Eastern-time kickoffs).
+## The product, in one paragraph
 
-## Usage
+A phone-first web board that pulls FanDuel's live NFL market, strips the vig
+out of every price, runs its own graded prediction model on each game, and
+builds parlays four ways (safest-N, safety-target, payout-goal, hand-picked)
+— every ticket opening in the user's own FanDuel app via one-tap
+`addToBetslip` links. It tracks saved tickets for multiple users, settles
+them automatically, keeps a season memory of everything it predicted, and
+grades itself weekly. Nothing here is betting advice, and the board says so.
+
+## Where it runs
+
+| Surface | URL | What it is |
+|---|---|---|
+| Full app | https://claude.ai/artifact/SuKFMDPsudMcWBdYktJ9sE | Board + tracker + crew standings + weekly read ("anyone with the link"; saving needs a Claude login) |
+| Public mirror | https://nfl-parlay-inky.vercel.app | Static copy, no login, no tracker; redeploys automatically on every push to this repo (`web/index.html`, `vercel.json`) |
+| Repo | github.com/pristinepoolspgh/nfl-parlay | Everything: code, ledgers, docs |
+
+## Components
+
+```
+nfl_parlay.py          CLI (slate, parlays, props, FanDuel one-tap links)
+board/make_snapshot.py Board generator: fetches everything, runs the model,
+                       writes the page + prediction/closing-line logs
+board/template.html    The page (all UI logic; data spliced at /*__DATA__*/)
+board/elo.py           Elo ratings from real finals (+ nflverse EPA fetch)
+board/sim.py           The model ("sims"): margins, totals, win prob,
+                       p_cover/p_over for any rung. VERSION history in header
+board/backtest.py      12-season backtest vs the closing line
+board/tune.py          Parameter experiments on the same harness
+board/learn.py         Grades favorites, leans, sim log (per version), crew
+board/settle.py        Grades saved tickets against ESPN finals
+board/crew.py          Folds all users' tickets into the season ledgers
+board/player.py        Any player's career/season numbers (ESPN APIs)
+board/epa.py           Team offensive EPA/game table (nflverse)
+memory/                Append-only ledgers (see "Ledgers")
+docs/research-playbook.md  Owner-supplied research doctrine + repo mapping
+docs/backtests.md      Every backtest run, tables, decisions taken
+web/index.html         The mirror copy of the current board
+```
+
+## Data sources (all free/keyless; fetched via curl)
+
+FanDuel public API (board, props, alt lines, TD scorers, in-play), ESPN
+public APIs (scoreboard/week, injuries, news, athlete stats), NFL.com news
+page, Rotowire NFL news feed, nflverse (`games.csv` incl. closing lines
+1999→, weekly team/player stats), Open-Meteo (stadium weather). **Not
+used:** any paid tool (OddsJam, PFF, etc.), X/Twitter (login/paid API;
+Rotowire relays the same reporters with attribution), NFL Next Gen Stats
+(requires auth).
+
+## The model ("the sims") — version history
+
+Full notes in `board/sim.py`'s header; evidence in `docs/backtests.md`.
+
+- **v1** Elo margins (K=20, HFA=48, MOV multiplier, ⅓ season regression)
+  + scoring-profile totals + 10k-draw modal scores.
+- **v2** blended nflverse EPA into margins — **cut in v4**: a 2,193-game
+  backtest vs the closing line (2015–2026) showed no blend weight beats
+  pure Elo; heavier blends significantly worse.
+- **v3** availability + weather enter the prediction: 4-pt dock when the
+  starting QB is Out/Doubtful (starter = season pass-attempt leader per
+  nflverse, so a hurt backup never triggers it); wind/rain press totals
+  outdoors.
+- **v4** EPA blend removed (see v2). SD 13.2 / K 20 / HFA 48 later
+  re-confirmed optimal by grid search; rest days tested, add nothing.
+- **v5 (current)** QB-change dock **validated**: 793 changed-starter games
+  2015–2026, docks 1–4 pts all beat none with 95% CI excluding zero, 4.0
+  optimal — closes a quarter of the model's gap to the closing line. Dock
+  now also fires when FanDuel's prop-implied starter differs from the
+  usual QB (catches benchings the injury report never lists).
+
+**Honest standing:** the closing line is better than the model
+(Brier .2084 vs .2175 on the backtest). The board's "Sims' calls" section
+says so in its header. The model's value is independence + the availability
+layer, and its live record is graded per version so any regression shows.
+
+## Money-math honesty rules (verify these first)
+
+1. Every two-sided price is **de-vigged** (pair-normalized implied
+   probabilities). One-sided markets (anytime TD) cannot be de-vigged and
+   the section header says the vig is still in the number.
+2. Displayed probabilities, payouts, and the safety/payout-goal guarantees
+   are **pure market math**. The sims influence only *which* legs builders
+   choose (market p penalized at half weight where the sims price a rung
+   lower — never inflated by agreement).
+3. Every model adjustment (QB dock, weather) is **disclosed on the game
+   card** ("Already in the sims: …") so nobody double-counts it.
+4. Payout tickets **prune drag legs** (≈ −2000 or shorter: ~zero payout,
+   real risk) and say when the best build uses fewer legs than asked
+   ("extra legs just feed the vig").
+5. No invented stats: news is quoted as reported with the source's wording;
+   player claims come from `board/player.py` lookups; roster questions
+   defer to the live market over anyone's memory.
+6. Parlay math treats legs as independent; FanDuel reprices same-game
+   combos on the slip, and the board tells users to check the slip price
+   before firing.
+
+## Ledgers & self-grading (`memory/`)
+
+- `pregame.jsonl` / `close.jsonl` — first-seen and latest pregame line per
+  game (open-vs-close movement; closing-line value for leans).
+- `simlog.jsonl` — every model prediction, logged pregame, **version-
+  tagged**; `learn.py` grades winner accuracy / margin MAE / Brier per
+  version, so model upgrades must beat their predecessors on the same
+  scoreboard.
+- `results.jsonl` + `insights.json` — market calibration by probability
+  bucket, upsets, crew section. Week 2: market said 68.8%, favorites won
+  66.7% (15 games).
+- `judgments.jsonl` — the weekly "read": notes + at most 1–2 gradeable
+  leans, never edited after the fact (material news appends dated notes).
+  Record so far: 1–2.
+- `tickets.jsonl` / `picks.jsonl` — every user's saved tickets and legs,
+  kept even if deleted from the board; feeds crew standings/calibration.
+
+## Automation (Routines bound to the building session)
+
+| When (ET) | What |
+|---|---|
+| Tue 9:00a | Grade last week (incl. CLV review), settle, roll board to new week |
+| Thu/Mon 7:00p | Refresh + optional 1-lean read (after inactives) |
+| Sun 11a, **12p**, 1p, 3p, 5p, 7p | Refresh, weekly read (≤2 leans), live prices, settle; the noon run exists to re-check 11:30a inactives |
+
+Every cycle publishes the artifact **and** pushes `web/index.html`, which
+redeploys the mirror. Routine prompts point at `board/sim.py`'s header and
+`docs/` rather than hardcoding model claims.
+
+## Access model
+
+Artifact db rules: any signed-in viewer reads everything and writes only
+their own tickets (owner-tagged; each user sees "My tickets" vs "Friends'
+tickets"); only the owner/automation writes the model docs (`meta/*`) —
+verified by a simulated lower-privilege write being refused. The Vercel
+mirror is public read-only by design.
+
+## How to verify the big claims
+
+```bash
+python3 board/backtest.py   # 12-season table vs closing line (~2 min)
+python3 board/tune.py       # SD/K/HFA grids, rest, QB-dock validation
+python3 board/elo.py        # ratings + model-vs-market edges
+python3 board/sim.py        # today's projections vs market
+python3 board/player.py "case keenum"
+```
+- De-vig spot check: any game's two prices → implied probs → normalize to
+  100%; compare the board's numbers.
+- One-tap check: tap a price, "Bet this ticket on FanDuel" must open the
+  FanDuel app with those exact selections (price shown there governs).
+- Ledger append-only check: `git log -p memory/judgments.jsonl` — leans
+  never edited after grading, only dated notes appended.
+
+## Known limitations (reviewer should know)
+
+- The model trails the closing line (~.009 Brier) — expected; the line
+  contains information scores can't. Treat "Sims' calls" as graded
+  opinions, not edges proven profitable. CLV tracking exists to test that.
+- Anytime-TD probabilities carry FanDuel's vig (disclosed on the board).
+- Name matching across feeds (FD ↔ ESPN ↔ nflverse) is normalized but a
+  mismatch would mis-tag an injury or mis-fire a dock; docks are disclosed
+  per game so they're auditable at a glance.
+- FanDuel/ESPN APIs are unofficial and can change shape (happened once;
+  parser was fixed same-day).
+- Routine times are UTC crons: US DST shift in November moves them an hour
+  earlier ET until retuned. Saturday December slates have no firing window.
+- No bankroll management is built in. High-variance products; the footer
+  says "nothing here is betting advice" and means it.
+- 2026 rosters postdate the builder's training data; all player-team facts
+  come from live feeds, not memory.
+
+## Prior CLI (original scope)
+
+`nfl_parlay.py` remains a standalone, dependency-free CLI, superseded by
+the board for daily use:
 
 ```
 python3 nfl_parlay.py slate                  # today's games + win probs
-python3 nfl_parlay.py parlay                 # best 4-leg parlay
-python3 nfl_parlay.py parlay --legs 3        # best 3-leg parlay
+python3 nfl_parlay.py parlay --legs 4        # safest parlay, fair-payout math
 python3 nfl_parlay.py parlay --target 0.90   # aim for 90% combined
-python3 nfl_parlay.py parlay --stake 25      # payout math on $25
-python3 nfl_parlay.py parlay --props 2       # swap 2 legs for player props
-python3 nfl_parlay.py props DEN              # player props with prices
-python3 nfl_parlay.py props DEN --alts       # include alternate lines
-python3 nfl_parlay.py props DEN --type rush  # just rushing props
+python3 nfl_parlay.py parlay --pay 500       # most likely +500 ticket
+python3 nfl_parlay.py props DEN              # priced player props (--alts, --type)
 python3 nfl_parlay.py slate --demo           # offline sample data
-python3 nfl_parlay.py slate --date 20260927  # a specific Sunday (YYYYMMDD)
 ```
-
-Live mode needs internet access to `site.api.espn.com` (game lines) and
-`www.bovada.lv` (prop prices); `--demo` runs anywhere on bundled sample data.
-
-## What the numbers mean
-
-- **WIN %** — the market's implied win probability after removing the vig, so
-  each game's two sides sum to 100%.
-- **FAIR ML** — the American moneyline that probability is worth with no
-  bookmaker margin. Books will always pay less than this.
-- **COMBINED HIT PROBABILITY** — the product of the legs' probabilities,
-  assuming independence.
-- The target check tells you when a hit-rate goal (say 90%) simply isn't
-  reachable on straight moneylines, and roughly what a true 90% ticket pays.
-
-## Player props
-
-`props <TEAM>` lists player props for that team's next game with real
-prices from Bovada's public JSON — both sides of every line, de-vigged into
-probabilities that sum to 100%. Defaults to the core full-game
-yardage/receptions markets at the main line; `--alts` shows every alternate
-line, `--type pass|rush|rec|td|all` filters, `--limit` caps the count.
-
-`parlay --props N` swaps N moneyline legs for the safest priced prop sides
-on the whole board (alternate lines included, at most one leg per player).
-Two honest caveats: the math treats legs as independent, but books price
-same-game combos (SGPs) differently and may bar some combinations; and if
-Bovada is unreachable the tool falls back to ESPN, which publishes only
-lines — a prop at the market line is ~50/50 either side, and the output
-says so rather than inventing an edge.
-
-Bovada's endpoints are public but unofficial, so they can change without
-notice; `--source espn` forces the fallback if they do.
-
-## Bet links
-
-By default (`--book fd`) the parlay is built from **FanDuel's own board** —
-moneylines and player props, probabilities de-vigged from FanDuel's posted
-prices — and the output ends with **one link that opens the FanDuel app
-with every leg already on the bet slip** (`addToBetslip`, the same deep-link
-mechanism pick-selling apps use). FanDuel reprices same-game combos once
-they're on the slip, so the slip's payout can differ from the fair math.
-
-`--book espn` keeps the ESPN/Bovada path: per-leg DraftKings slip links for
-moneylines (the DK slip keeps earlier picks as you tap each leg in turn) and
-Bovada board links for props. The `props` view also prints its game's "Bet
-this board" link.
-
-Estimates, not guarantees. Nothing here is betting advice.
