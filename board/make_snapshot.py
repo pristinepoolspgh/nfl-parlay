@@ -451,7 +451,8 @@ def build_snapshot():
                         "date": key[0], "matchup": g["matchup"],
                         "week": week, "mu_margin": pred["mu_margin"],
                         "mu_total": pred["mu_total"],
-                        "p_home": pred["p_home"]}) + "\n")
+                        "p_home": pred["p_home"],
+                        "v": getattr(simmod.Model, "VERSION", 1)}) + "\n")
                     logged.add(key)
 
     # Closing-line log: keep the latest pregame sighting per game (CLV).

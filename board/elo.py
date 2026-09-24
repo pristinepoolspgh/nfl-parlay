@@ -94,6 +94,48 @@ def update(ratings, g):
     ratings[g["away"]] = rb - delta
 
 
+EPA_URL = ("https://github.com/nflverse/nflverse-data/releases/download/"
+           "stats_team/stats_team_week_{season}.csv")
+
+
+def fetch_epa(season):
+    """Per-team efficiency from nflverse's weekly team stats: offensive
+    EPA/game, and defensive EPA allowed/game via the opponent pairing.
+    Returns {} on any failure so callers fall back to pure Elo."""
+    import csv
+    import io
+    try:
+        out = subprocess.run(["curl", "-sSgL", "--max-time", "30",
+                              EPA_URL.format(season=season)],
+                             capture_output=True, check=True)
+        rows = list(csv.DictReader(io.StringIO(out.stdout.decode())))
+    except Exception:
+        return {}
+    alias = {"WAS": "WSH", "LA": "LAR", "JAC": "JAX", "ARZ": "ARI"}
+    off_games = {}
+    for r in rows:
+        if r.get("season_type") != "REG":
+            continue
+        try:
+            epa = (float(r.get("passing_epa") or 0)
+                   + float(r.get("rushing_epa") or 0))
+        except ValueError:
+            continue
+        team = alias.get(r["team"], r["team"])
+        opp = alias.get(r.get("opponent_team", ""),
+                        r.get("opponent_team", ""))
+        off_games.setdefault(team, []).append((opp, epa))
+    epa = {}
+    for t, games in off_games.items():
+        allowed = [e for opp, gs in off_games.items() if opp != t
+                   for o, e in gs if o == t]
+        epa[t] = {"off": round(sum(e for _, e in games) / len(games), 2),
+                  "def": round(sum(allowed) / len(allowed), 2)
+                  if allowed else 0.0,
+                  "n": len(games)}
+    return epa
+
+
 def build():
     ratings = {}
     scoring = {}  # team -> [pf25, pa25, n25, pf26, pa26, n26]
@@ -157,6 +199,7 @@ def main():
     os.makedirs(os.path.dirname(ELO_PATH), exist_ok=True)
     json.dump({"updated": datetime.utcnow().strftime("%Y-%m-%dT%H:%MZ"),
                "games": n, "league_total": league_total,
+               "epa": fetch_epa(datetime.utcnow().year),
                "scoring": blended,
                "ratings": {t: round(r, 1) for t, r in
                            sorted(ratings.items(), key=lambda x: -x[1])}},

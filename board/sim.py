@@ -41,11 +41,17 @@ def _phi(x):
     return 0.5 * (1.0 + math.erf(x / math.sqrt(2.0)))
 
 
+EPA_BLEND_K = 6.0  # games until EPA carries half the margin estimate
+
+
 class Model:
+    VERSION = 2  # v2: Elo margin blended with nflverse EPA differential
+
     def __init__(self, path=ELO_PATH):
         d = json.load(open(path))
         self.ratings = d["ratings"]
         self.scoring = d.get("scoring", {})
+        self.epa = d.get("epa", {})
         self.league_total = d.get("league_total", 44.0)
 
     def predict(self, home, away, neutral=False):
@@ -53,6 +59,20 @@ class Model:
         ra = self.ratings.get(home, 1500.0) + (0.0 if neutral else HFA)
         rb = self.ratings.get(away, 1500.0)
         mu_margin = (ra - rb) / 25.0
+        # Blend in the efficiency view where nflverse EPA covers both
+        # teams: margin ≈ (offA − offB) + (defB_allowed − defA_allowed),
+        # EPA/game being roughly points, plus home field. The weight
+        # grows with sample (n/(n+K)) because early-season EPA is
+        # small-sample noise; Elo carries the rest. Neither term sees
+        # injuries — that stays the reads' job.
+        eh, ea = self.epa.get(home), self.epa.get(away)
+        if eh and ea and eh.get("n") and ea.get("n"):
+            hfa_pts = 0.0 if neutral else HFA / 25.0
+            m_epa = ((eh["off"] - ea["off"])
+                     + (ea["def"] - eh["def"]) + hfa_pts)
+            n_min = min(eh["n"], ea["n"])
+            w = n_min / (n_min + EPA_BLEND_K)
+            mu_margin = (1.0 - w) * mu_margin + w * m_epa
         sh = self.scoring.get(home, {})
         sa = self.scoring.get(away, {})
         half = self.league_total / 2.0

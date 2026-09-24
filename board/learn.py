@@ -169,6 +169,22 @@ def main():
                      "margin_mae": round(margin_mae, 2),
                      "total_mae": round(total_mae, 2),
                      "brier": round(brier, 4)}
+        # Per model version, so an upgrade proves itself on the same
+        # scoreboard instead of silently replacing the old record.
+        by_v = {}
+        for r in done_sims:
+            by_v.setdefault(r.get("v", 1), []).append(r)
+        if len(by_v) > 1:
+            sim_stats["by_version"] = {
+                str(v): {"n": len(rs),
+                         "margin_mae": round(sum(
+                             abs((r["hs"] - r["as_"]) - r["mu_margin"])
+                             for r in rs) / len(rs), 2),
+                         "brier": round(sum(
+                             (r["p_home"] - (1.0 if r["hs"] > r["as_"]
+                              else 0.5 if r["hs"] == r["as_"] else 0.0)
+                              ) ** 2 for r in rs) / len(rs), 4)}
+                for v, rs in sorted(by_v.items())}
 
     # The crew's ledger: everyone's saved tickets, graded by the same
     # scoreboard. Picks don't feed the score-based sims; they build a
