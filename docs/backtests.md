@@ -125,3 +125,28 @@ disagreement is presented as research, not edge, until a non-FanDuel
 fair price exists (multi-book consensus) and this same test passes on
 some market. The test is rerunnable in one command and should gate
 any future "the model sees value" claim.
+
+## 2026-09-24 (sixth pass): do the sims' upset calls win?
+
+Owner asked that the sims be allowed to suggest upsets when they give
+the underdog a heavy chance. board/upset_test.py tests the rule before
+it ships: sims (v6) give the market's underdog ≥T and ≥G more than the
+de-vigged close; $100 on the dog's closing moneyline; bootstrap 95% CI
+on ROI. Thresholds were fixed before the run.
+
+| rule | weeks | n | dogs won | market implied | ROI [95% CI] |
+|---|---|---|---|---|---|
+| sims ≥50%, +10 pts | 2+ | 249 | 40.2% | 40.3% | −2.1% [−16.8, +12.3] |
+| sims ≥50%, +10 pts | 5+ | 195 | 37.9% | 40.6% | −7.6% [−24.8, +9.3] |
+| sims ≥45%, +10 pts | 2+ | 347 | 39.2% | 38.4% | +0.1% [−13.5, +13.8] |
+| sims ≥50%, +15 pts | 2+ | 141 | 39.7% | 38.6% | +1.5% [−19.5, +23.0] |
+| every underdog | 2+ | 2,728 | 33.5% | 33.6% | −4.4% [−9.8, +1.0] |
+
+When the sims pick the upset, the dog wins about 4 in 10, which is
+what the price already says, not the 50%+ the sims claim. No
+threshold's CI clears zero. **Shipped as "Upset watch" with that
+record printed under it** (rule: sims ≥50% and ≥10 pts over market,
+excluding gaps an injured usual-starter QB explains). Calls are logged
+on first sighting to memory/upsets.jsonl and graded by learn.py
+(`upset_calls` in insights), so the live record accumulates next to
+the backtest one.

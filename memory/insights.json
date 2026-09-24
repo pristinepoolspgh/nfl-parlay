@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-23T16:28Z",
+ "updated": "2026-09-24T23:35Z",
  "games": 15,
  "predicted": 0.6882,
  "actual": 0.6667,
@@ -74,6 +74,23 @@
   }
  ],
  "sim": null,
+ "upset_calls": {
+  "calls": 1,
+  "graded": 0,
+  "won": 0,
+  "implied": null,
+  "net_per_100": 0,
+  "recent": [
+   {
+    "week": 3,
+    "matchup": "CIN @ PIT",
+    "dog": "PIT",
+    "odds": 160.0,
+    "won": null
+   }
+  ]
+ },
+ "crew": null,
  "leans": {
   "won": 1,
   "lost": 2,

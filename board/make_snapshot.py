@@ -478,12 +478,22 @@ def build_snapshot():
         if "Passing" in (c.get("type") or ""):
             implied_qbs.setdefault(c["matchup"], set()).add(
                 _norm_name(c["player"]))
+    # A headline tagged to more than two teams is a league roundup
+    # ("Week 3 uniforms"), not news about this game.
+    tagged = {}
+    for rows in news_by_team.values():
+        for h in rows:
+            tagged[h] = tagged.get(h, 0) + 1
     for g in games:
         away, home = g["matchup"].split(" @ ")
         g["inj"] = {t: inj_by_team.get(t, [])[:4] for t in (away, home)
                     if inj_by_team.get(t)}
-        heads = [h for t in (away, home)
-                 for h in news_by_team.get(t, [])[:2]]
+        heads = []
+        for t in (away, home):
+            for h in [h for h in news_by_team.get(t, [])
+                      if tagged[h] <= 2][:2]:
+                if h not in heads:
+                    heads.append(h)
         if heads:
             g["news"] = heads[:3]
         wx = fetch_weather(home, g["start"])
@@ -653,7 +663,11 @@ def build_snapshot():
     # Plain-English model notes: say what each flagged edge means, and
     # dismiss the ones the injury report explains (Elo can't see hurt QBs).
     def _qb_hurt(team):
+        """The usual starter (season pass-attempt leader) is
+        Out/Doubtful. A hurt backup explains nothing."""
+        qb = starters.get(team)
         return any(r["pos"] == "QB" and r["status"] in ("Out", "Doubtful")
+                   and (not qb or _norm_name(r["name"]) == _norm_name(qb))
                    for r in inj_by_team.get(team, []))
     for g in games:
         if "ep" not in g:
@@ -674,11 +688,13 @@ def build_snapshot():
                         f"{mp} knows {dog}'s QB is hurt — gap explained, "
                         f"no edge.")
             g["sayx"] = True
+            g["explained"] = True
         elif edge > 0 and _qb_hurt(fav) and fav not in docked:
             g["say"] = (ps + f"Our numbers like {fav} at {epc} vs the market's "
                         f"{mp}, but {fav}'s QB injury explains the market's "
                         f"caution.")
             g["sayx"] = True
+            g["explained"] = True
         elif edge < 0:
             g["say"] = (ps + f"The price says {fav} {mp}; their results say "
                         f"more like {epc}. Either the number is rich — or "
@@ -702,11 +718,63 @@ def build_snapshot():
             else:
                 g["say"], g["sayx"] = extra, True
 
+    # Upset watch: the sims pick the market's underdog to win outright
+    # by a real margin. Gaps an injured QB explains don't count. The
+    # backtest record rides along so nobody mistakes a call for a lock.
+    upsets = []
+    for g in games:
+        if "ep" not in g or g.get("explained"):
+            continue
+        fav, dog = g["sides"]
+        p_dog_sim = round(1.0 - g["ep"], 4)
+        if p_dog_sim >= UPSET_MIN and p_dog_sim - dog["p"] >= UPSET_GAP:
+            g["upset"] = True
+            upsets.append({"desc": dog["team"] + " ML", "team": dog["team"],
+                           "over": fav["team"], "p": dog["p"],
+                           "sp": p_dog_sim, "odds": dog["odds"],
+                           "market": g["market"], "sel": dog["sel"],
+                           "matchup": g["matchup"], "start": g["start"]})
+    upsets.sort(key=lambda u: u["p"] - u["sp"])
+    log_upsets(upsets, week)
+
     stamp = (datetime.now(np._EASTERN) if np._EASTERN
              else datetime.utcnow()).strftime("%b %d, %Y %I:%M %p ET")
     return {"generated": stamp, "week": week, "games": games,
             "props": props[:24], "tds": tds, "alts": alts,
-            "simbets": simbets, "scores": scores, "live": live}
+            "simbets": simbets, "upsets": upsets, "upset_bt": UPSET_BT,
+            "scores": scores, "live": live}
+
+
+# Upset watch thresholds and their backtest (board/upset_test.py,
+# docs/backtests.md): sims ≥50% on the dog and ≥10 pts over the de-vigged
+# close, 2015–2026, weeks 2+. The dogs won as often as the price said.
+UPSET_MIN, UPSET_GAP = 0.50, 0.10
+UPSET_BT = {"n": 249, "won": 0.402, "implied": 0.403, "roi": -0.021}
+
+
+def log_upsets(upsets, week):
+    """First sighting of each upset call goes to memory/upsets.jsonl,
+    graded by learn.py — the calls face the same scoreboard as leans."""
+    path = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "memory", "upsets.jsonl")
+    seen = set()
+    if os.path.exists(path):
+        for line in open(path):
+            try:
+                r = json.loads(line)
+                seen.add((r["date"], r["matchup"]))
+            except Exception:
+                continue
+    with open(path, "a") as f:
+        for u in upsets:
+            k = (u["start"][:10], u["matchup"])
+            if k in seen:
+                continue
+            f.write(json.dumps({"date": k[0], "matchup": u["matchup"],
+                                "week": week, "dog": u["team"],
+                                "p_mkt": u["p"], "p_sim": u["sp"],
+                                "odds": u["odds"]}) + "\n")
+            seen.add(k)
 
 
 def log_pregame(snap):

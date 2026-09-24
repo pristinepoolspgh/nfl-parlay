@@ -121,6 +121,29 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   font:600 12px/1 Barlow, sans-serif; padding:6px 10px; border-radius:7px;
   cursor:pointer; white-space:nowrap;
 }
+.modes{display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:10px 14px 0}
+.modes button{
+  border:1px solid var(--edge); background:var(--inset); color:var(--muted);
+  font:600 14px/1 "Barlow Condensed", sans-serif; letter-spacing:.06em;
+  text-transform:uppercase; padding:10px 6px; border-radius:8px; cursor:pointer;
+}
+.modes button.on{background:var(--go); border-color:var(--go); color:var(--go-ink)}
+.lines{grid-column:2 / 4; display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:8px}
+.lines .lab{font:600 10.5px/1 Barlow, sans-serif; letter-spacing:.07em; text-transform:uppercase; color:var(--faint)}
+.lines .grp{display:inline-flex; align-items:center; gap:6px}
+.lines .more{padding:0; margin-left:auto}
+.ladder{grid-column:2 / 4; margin-top:6px}
+.ladder .lab{display:block; margin:8px 0 4px; font:600 10.5px/1 Barlow, sans-serif; letter-spacing:.07em; text-transform:uppercase; color:var(--faint)}
+.ladder .chips{display:flex; flex-wrap:wrap; gap:5px}
+button.side.mini{padding:6px 7px; font-size:12px}
+button.side.mini small{font-size:9.5px}
+.utag{
+  display:inline-block; margin-left:6px; padding:2px 5px; border-radius:4px;
+  font:700 9.5px/1 Barlow, sans-serif; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--money); border:1px solid var(--money); vertical-align:2px;
+}
+.upnote{padding:10px 14px 12px; border-top:1px solid var(--edge); color:var(--muted); font-size:12.5px; line-height:1.45}
+.upnote button{margin-top:8px}
 .legs{list-style:none; margin:0; padding:4px 0}
 .empty{padding:18px 14px; color:var(--faint); font-size:13.5px}
 .leg{
@@ -355,6 +378,10 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
   </header>
 
   <section class="card" aria-label="Ticket builder">
+    <div class="modes" role="group" aria-label="How to build the ticket">
+      <button id="mode-auto" class="on" type="button" aria-pressed="true">Build it for me</button>
+      <button id="mode-own" type="button" aria-pressed="false">Build my own</button>
+    </div>
     <div class="controls" id="controls">
       <div class="ctl" id="ctl-legs"><label for="legdn">Legs</label>
         <div class="step"><button id="legdn" aria-label="Fewer legs">&minus;</button><span class="val" id="legv">4</span><button id="legup" aria-label="More legs">+</button></div>
@@ -378,8 +405,8 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
       </div>
     </div>
     <div class="custombar" id="custombar" hidden>
-      <span>Your ticket — tap odds below to pick, or + to fill with the safest leg</span>
-      <button id="reset">Back to auto</button>
+      <span>Tap any price on the board — moneylines, spreads, totals, alt lines, props, TD scorers. <b>+</b> on Legs adds the safest leg from a game you haven't used.</span>
+      <button id="reset" type="button">Clear</button>
     </div>
     <ul class="legs" id="legs"></ul>
     <div class="ticketwrap">
@@ -420,10 +447,14 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
     the current price when it opens — check it before you fire.</div>
   </section>
 
-  <h2>The board <small>&middot; tap a price to build your own &middot; model notes in plain words under flagged games</small></h2>
+  <h2>The board <small>&middot; tap any price to build your own &middot; alt lines and notes open under each game</small></h2>
   <section class="card"><ul class="rows" id="slate"></ul></section>
 
-  <h2 id="simhead" hidden>Sims&rsquo; calls <small>&middot; where the model most disagrees with the price &middot; the market usually wins this argument &mdash; these are the exceptions the sims insist on</small></h2>
+  <h2 id="uphead" hidden>Upset watch <small>&middot; the sims pick the underdog to win outright</small></h2>
+  <section class="card" id="upcard" hidden><ul class="rows" id="upboard"></ul>
+    <div class="upnote" id="upnote"></div></section>
+
+  <h2 id="simhead" hidden>Sims&rsquo; calls <small>&middot; where the model most disagrees with the price &middot; research, not edge: across 2,193 graded games these disagreements predicted nothing beyond the closing line &mdash; shown because they&rsquo;re graded, not because they&rsquo;re right</small></h2>
   <section class="card" id="simcard" hidden><ul class="rows" id="simboard"></ul></section>
 
   <h2>Props <small>&middot; strongest priced sides, one per player</small></h2>
@@ -507,6 +538,7 @@ const propLeg = c => ({desc: `${c.player} ${c.side==="Over"?"O":"U"} ${c.line}`,
   team: null, p: c.p, odds: c.odds, market: c.market, sel: c.sel,
   sub: c.type+" · "+c.matchup});
 const ALL_LEGS = {};
+const UPSET_TXT = "50%-plus";
 D.games.forEach(g => g.sides.forEach(s => { const l = mlLeg(g, s); ALL_LEGS[key(l)] = l; }));
 D.props.forEach(c => {
   for (const s of ["over", "under"]){
@@ -524,6 +556,16 @@ D.props.forEach(c => {
     desc: `${c.player} anytime TD`, team: null, p: c.p, odds: c.odds,
     market: c.market, sel: c.sel, sub: "anytime TD · " + c.matchup};
 });
+// Every spread/total/ML rung on every game is pickable by hand. Alt
+// rungs are flagged so the + fill never grabs a −5000 drag leg.
+const SPR_RE = /^([A-Z]{2,3}) ([+-][\d.]+)$/, TOT_RE = /^(Over|Under) ([\d.]+) pts$/;
+D.games.forEach(g => (D.alts[g.matchup] || []).forEach(r => {
+  const k = r.market + ":" + r.sel;
+  const m = (r.desc || "").match(SPR_RE);
+  if (!ALL_LEGS[k]) ALL_LEGS[k] = {desc: r.desc, team: m ? m[1] : null,
+    p: r.p, odds: r.odds, market: r.market, sel: r.sel, alt: true,
+    sub: g.matchup + " · " + kick(g.start)};
+}));
 (D.simbets || []).forEach(r => {
   const k = r.market + ":" + r.sel;
   if (!ALL_LEGS[k]) ALL_LEGS[k] = {
@@ -751,7 +793,7 @@ function parsePay(s){
   return Math.abs(a) < 100 ? null : a;
 }
 
-let legs = 4, props = 1;
+let legs = 4, props = 1, manual = false;
 const custom = new Map();
 let shownPay = null, payAnim = null;
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -796,9 +838,14 @@ function legRow(i, l, removable){
 
 function render(){
   clamp();
-  $("legv").textContent = custom.size > 0 ? custom.size : legs;
+  $("legv").textContent = manual ? custom.size : legs;
   $("propv").textContent = props;
-  const isCustom = custom.size > 0;
+  const isCustom = manual;
+  $("mode-auto").classList.toggle("on", !manual);
+  $("mode-own").classList.toggle("on", manual);
+  $("mode-auto").setAttribute("aria-pressed", String(!manual));
+  $("mode-own").setAttribute("aria-pressed", String(manual));
+  for (const id of ["ctl-props", "ctl-target", "ctl-pay"]) $(id).hidden = manual;
   const pay = isCustom ? null : parsePay($("paygoal").value);
   const target = (isCustom || pay) ? 0 : (parseFloat($("target").value) || 0);
   $("custombar").hidden = !isCustom;
@@ -837,7 +884,9 @@ function render(){
   const combined = ticketLegs.reduce((a,l) => a*l.p, 1);
   $("legs").innerHTML = ticketLegs.length
     ? ticketLegs.map((l,i) => legRow(i+1, l, isCustom)).join("")
-    : `<li class="empty">Empty ticket — tap prices on the board below.</li>`;
+    : `<li class="empty">${isCustom
+        ? "Your ticket is empty. Tap any price below — a moneyline, spread, total, alt line, prop or TD scorer — and it lands here."
+        : "Empty ticket — tap prices on the board below."}</li>`;
   document.querySelectorAll("#legs .rm").forEach(b =>
     b.onclick = () => { custom.delete(b.dataset.k); render(); });
   const t = $("ticket");
@@ -853,8 +902,12 @@ function render(){
   $("comb").textContent = ticketLegs.length ? pct(combined) : "—";
   $("fair").innerHTML = ticketLegs.length
     ? "$"+(stake/combined).toFixed(2)+` <small>${am(combined)}</small>` : "—";
-  showPay(ticketLegs.length ? stake*fdDec : 0, stake);
-  if (isCustom){
+  if (ticketLegs.length) showPay(stake*fdDec, stake);
+  else { cancelAnimationFrame(payAnim); shownPay = null; $("pay").textContent = "—"; }
+  if (isCustom && !ticketLegs.length){
+    $("vlabel").textContent = "Your ticket";
+    $("vline").textContent = "nothing on it yet";
+  } else if (isCustom){
     const v = VERDICTS.find(v => combined >= v[0]);
     $("vlabel").textContent = "Your ticket · " + v[1].toLowerCase();
     $("vline").textContent = ticketLegs.length + " leg" + (ticketLegs.length>1?"s":"") + ", hand-picked";
@@ -897,9 +950,25 @@ function render(){
   }
 }
 
+// FanDuel takes one spread, one total and one moneyline side per game,
+// and one side of each prop — tapping another rung swaps it in. Anytime
+// TD scorers stack.
+const slotOf = l => {
+  if (/anytime TD$/.test(l.desc)) return null;
+  const kd = kindOf(l.desc);
+  return kd === "prop" ? "p:" + l.market : kd + ":" + matchOf(l);
+};
 function toggleLeg(k){
+  const l = ALL_LEGS[k];
+  if (!l) return;
+  manual = true;
   if (custom.has(k)) custom.delete(k);
-  else custom.set(k, ALL_LEGS[k]);
+  else {
+    const slot = slotOf(l);
+    if (slot) for (const [ok, ol] of custom)
+      if (slotOf(ol) === slot) custom.delete(ok);
+    custom.set(k, l);
+  }
   render();
 }
 
@@ -910,7 +979,7 @@ const fills = [];
 function addFill(){
   const used = new Set([...custom.values()].map(l => matchOf(l) || l.desc));
   const cand = Object.entries(ALL_LEGS)
-    .filter(([k, l]) => !custom.has(k) && !used.has(matchOf(l) || l.desc))
+    .filter(([k, l]) => !l.alt && !custom.has(k) && !used.has(matchOf(l) || l.desc))
     .sort((a, b) => b[1].p - a[1].p)[0];
   if (cand){ custom.set(cand[0], cand[1]); fills.push(cand[0]); }
 }
@@ -920,11 +989,13 @@ function removeFill(){
     if (custom.has(k)){ custom.delete(k); return; }
   }
 }
-$("legup").onclick = () => { if (custom.size) addFill(); else legs++; render(); };
-$("legdn").onclick = () => { if (custom.size) removeFill(); else legs--; render(); };
+$("legup").onclick = () => { if (manual) addFill(); else legs++; render(); };
+$("legdn").onclick = () => { if (manual) removeFill(); else legs--; render(); };
 $("propup").onclick = () => { props++; render(); };
 $("propdn").onclick = () => { props--; render(); };
-$("reset").onclick = () => { custom.clear(); render(); };
+$("reset").onclick = () => { custom.clear(); fills.length = 0; render(); };
+$("mode-auto").onclick = () => { manual = false; render(); };
+$("mode-own").onclick = () => { manual = true; render(); };
 $("target").addEventListener("change", render);
 $("paygoal").addEventListener("input", render);
 $("paysign").onclick = () => {
@@ -1010,6 +1081,34 @@ function injLine(g){
     ? `<span class="injline">${bits.slice(0, 3).join(" · ")}</span>` : "";
 }
 
+// Main spread/total = the rung priced nearest a coin flip; the rest of
+// each ladder folds under "alt lines".
+function gameLines(g){
+  const spr = [], tot = [];
+  for (const r of (D.alts[g.matchup] || [])){
+    let m;
+    if ((m = r.desc.match(SPR_RE))) spr.push({...r, team: m[1], ln: +m[2]});
+    else if ((m = r.desc.match(TOT_RE))) tot.push({...r, side: m[1], ln: +m[2]});
+  }
+  const near = a => a.slice().sort((x, y) => Math.abs(x.p - .5) - Math.abs(y.p - .5))[0];
+  const fav = g.sides[0].team, dog = g.sides[1].team;
+  const fs = near(spr.filter(r => r.team === fav));
+  const ds = fs && spr.find(r => r.team === dog && r.ln === -fs.ln);
+  const ov = near(tot.filter(r => r.side === "Over"));
+  const un = ov && tot.find(r => r.side === "Under" && r.ln === ov.ln);
+  const band = r => r.p >= 0.12 && r.p <= 0.92;
+  return {fs, ds, ov, un,
+    ladder: [[fav + " spread", spr.filter(r => r.team === fav && band(r)).sort((a, b) => a.ln - b.ln)],
+             [dog + " spread", spr.filter(r => r.team === dog && band(r)).sort((a, b) => a.ln - b.ln)],
+             ["Over", tot.filter(r => r.side === "Over" && band(r)).sort((a, b) => a.ln - b.ln)],
+             ["Under", tot.filter(r => r.side === "Under" && band(r)).sort((a, b) => a.ln - b.ln)]]
+      .filter(([, rs]) => rs.length)};
+}
+const lnTxt = r => r.side ? (r.side === "Over" ? "O " : "U ") + r.ln
+  : r.team + " " + (r.ln > 0 ? "+" + r.ln : r.ln < 0 ? "−" + Math.abs(r.ln) : "PK");
+const lineBtn = (r, mini) => `<button class="side${mini ? " mini" : ""}" data-k="${r.market}:${r.sel}">
+    ${lnTxt(r)}<small>${fd(r.odds)} · ${pct(r.p)}</small></button>`;
+
 $("slate").innerHTML = D.games.map((g, i) => {
   const fav = g.sides[0];
   const btn = s => `<button class="side" data-k="${g.market}:${s.sel}">
@@ -1024,9 +1123,21 @@ $("slate").innerHTML = D.games.map((g, i) => {
   const more = extra ? `<button class="more${hot ? " hot" : ""}" data-x="gx${i}">
       ${hot ? "model note" : "notes"}</button>
     <span class="extra" id="gx${i}" hidden>${extra}</span>` : "";
+  const L = gameLines(g);
+  const main = [];
+  if (L.fs && L.ds) main.push(`<span class="grp"><span class="lab">Spread</span>${lineBtn(L.fs)}${lineBtn(L.ds)}</span>`);
+  if (L.ov && L.un) main.push(`<span class="grp"><span class="lab">Total</span>${lineBtn(L.ov)}${lineBtn(L.un)}</span>`);
+  const ladder = L.ladder.length
+    ? `<button class="more" data-x="gl${i}">alt lines</button>` : "";
+  const lines = main.length || ladder
+    ? `<span class="lines">${main.join("")}${ladder}</span>` : "";
+  const ladderBox = L.ladder.length ? `<span class="ladder" id="gl${i}" hidden>${
+    L.ladder.map(([lab, rs]) => `<span class="lab">${lab}</span><span class="chips">${
+      rs.map(r => lineBtn(r, true)).join("")}</span>`).join("")}</span>` : "";
+  const utag = g.upset ? `<span class="utag">sims: upset</span>` : "";
   return `<li style="--tc:${TEAMCOLOR[fav.team] || "var(--edge)"}"><span class="tab"></span>
-    <span><span class="m">${g.matchup}</span><br><span class="t">${kick(g.start)}${sim}</span>${more}</span>
-    <span class="sides">${btn(g.sides[0])}${btn(g.sides[1])}</span></li>`;
+    <span><span class="m">${g.matchup}${utag}</span><br><span class="t">${kick(g.start)}${sim}</span>${more}</span>
+    <span class="sides">${btn(g.sides[0])}${btn(g.sides[1])}</span>${lines}${ladderBox}</li>`;
 }).join("");
 document.querySelectorAll("#slate .more").forEach(b =>
   b.onclick = () => {
@@ -1045,6 +1156,33 @@ $("propboard").innerHTML = D.props.map(c => {
       <span class="t">${c.type} · ${c.matchup}</span></span>
     <span class="sides">${btn("over")}${btn("under")}</span></li>`;
 }).join("");
+
+if ((D.upsets || []).length){
+  $("uphead").hidden = false;
+  $("upcard").hidden = false;
+  $("upboard").innerHTML = D.upsets.map(u => `
+    <li style="--tc:${TEAMCOLOR[u.team] || "var(--money)"}"><span class="tab"></span>
+      <span><span class="m">${u.team} over ${u.over}</span><br>
+        <span class="t">${u.matchup} · ${kick(u.start)} · sims ${(u.sp*100).toFixed(0)}% vs market ${(u.p*100).toFixed(0)}%</span></span>
+      <span class="sides"><button class="side" data-k="${u.market}:${u.sel}">
+        ${u.team} ${fd(u.odds)}<small>${pct(u.p)}</small></button></span></li>`).join("");
+  const bt = D.upset_bt || {};
+  $("upnote").innerHTML = `These are the games where the sims give the
+    underdog at least a coin flip and 10+ points more than the price does.
+    The honest record: across ${bt.n} such games since 2015 the dogs won
+    <b>${(bt.won*100).toFixed(0)}%</b> — right where the market had them
+    (${(bt.implied*100).toFixed(0)}%), not the ${UPSET_TXT} the sims claimed.
+    So they're live dogs that pay like it, not locks. Every call this season
+    is logged and graded.
+    <button class="sharebtn" id="upload" type="button">Put the sims’ upsets on my ticket</button>`;
+  $("upload").onclick = () => {
+    manual = true;
+    D.upsets.forEach(u => { const k = u.market + ":" + u.sel;
+      if (ALL_LEGS[k]) custom.set(k, ALL_LEGS[k]); });
+    render();
+    document.querySelector("[aria-label='Ticket builder']").scrollIntoView({behavior: reduceMotion ? "auto" : "smooth"});
+  };
+}
 
 if ((D.simbets || []).length){
   $("simhead").hidden = false;
@@ -1160,7 +1298,9 @@ async function renderBook(snap){
   $("bookcard").hidden = !has;
   if (!has) return;
   const b = snap.data();
-  let html = `<div class="sum">${b.summary}</div>`;
+  let html = `<div class="sum">${b.summary}${(b.games || 0) < 200
+    ? ` <small>(${b.games} games is far below the ~200 a calibration
+      read needs — shown for transparency, not inference)</small>` : ""}</div>`;
   const rows = (b.buckets || []).filter(x => x.n > 0);
   if (rows.length){
     html += `<div class="cal"><span class="h">Favorites</span>

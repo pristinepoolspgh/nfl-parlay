@@ -186,6 +186,45 @@ def main():
                               ) ** 2 for r in rs) / len(rs), 4)}
                 for v, rs in sorted(by_v.items())}
 
+    # The sims' upset calls (memory/upsets.jsonl): did the dog win, and
+    # what would $100 on each logged price have made?
+    UPS = os.path.join(MEM, "upsets.jsonl")
+    ups = read_jsonl(UPS)
+    upend = [r for r in ups if "won" not in r]
+    if upend:
+        dates = {r["date"].replace("-", "") for r in upend}
+        extra = {(datetime.strptime(d, "%Y%m%d") + timedelta(days=1))
+                 .strftime("%Y%m%d") for d in dates}
+        uf = fetch_finals(dates | extra)
+        changed = False
+        for r in upend:
+            if r["matchup"] in uf:
+                a_s, h_s = uf[r["matchup"]]
+                if a_s == h_s:
+                    r["won"] = None
+                else:
+                    away, home = r["matchup"].split(" @ ")
+                    r["won"] = (away if a_s > h_s else home) == r["dog"]
+                changed = True
+        if changed:
+            with open(UPS, "w") as f:
+                for r in ups:
+                    f.write(json.dumps(r) + "\n")
+    graded = [r for r in ups if r.get("won") is not None and "won" in r]
+    upset_calls = None
+    if ups:
+        o = lambda ml: ml / 100.0 if ml > 0 else 100.0 / -ml
+        upset_calls = {
+            "calls": len(ups), "graded": len(graded),
+            "won": sum(1 for r in graded if r["won"]),
+            "implied": round(sum(r["p_mkt"] for r in graded) / len(graded), 4)
+            if graded else None,
+            "net_per_100": round(sum(100 * o(r["odds"]) if r["won"]
+                                     else -100 for r in graded), 2),
+            "recent": [{"week": r["week"], "matchup": r["matchup"],
+                        "dog": r["dog"], "odds": r["odds"],
+                        "won": r.get("won")} for r in ups[-8:]]}
+
     # The crew's ledger: everyone's saved tickets, graded by the same
     # scoreboard. Picks don't feed the score-based sims; they build a
     # record of who hits and whether saved legs beat their quoted odds.
@@ -270,6 +309,7 @@ def main():
                     "fav": r["fav"], "p_fav": r["p_fav"],
                     "score": r["score"]} for r in upsets[:12]],
         "sim": sim_stats,
+        "upset_calls": upset_calls,
         "crew": crew,
         "leans": {"won": lw, "lost": ll,
                   "pending": len(all_leans) - lw - ll,

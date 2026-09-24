@@ -118,6 +118,7 @@ def replay(games, K, HFA, regress=1 / 3):
             rows.append({"m": (ra - rb) / 25.0, "wk": g["week"],
                          "actual": g["hs"] - g["as"],
                          "pm": devig(g["hml"], g["aml"]),
+                         "hml": g["hml"], "aml": g["aml"],
                          "dr": g["hrest"] - g["arest"],
                          "nh": flags["h"][0], "na": flags["a"][0],
                          "nh2": flags["h"][1], "na2": flags["a"][1]})

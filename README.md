@@ -10,7 +10,9 @@ repo.
 
 A phone-first web board that pulls FanDuel's live NFL market, strips the vig
 out of every price, runs its own graded prediction model on each game, and
-builds parlays four ways (safest-N, safety-target, payout-goal, hand-picked)
+builds parlays four ways (safest-N, safety-target, payout-goal, and
+"Build my own", where any moneyline, spread, total, alt rung, prop or TD
+scorer can be tapped onto a ticket)
 — every ticket opening in the user's own FanDuel app via one-tap
 `addToBetslip` links. It tracks saved tickets for multiple users, settles
 them automatically, keeps a season memory of everything it predicted, and
@@ -36,6 +38,8 @@ board/sim.py           The model ("sims"): margins, totals, win prob,
                        p_cover/p_over for any rung. VERSION history in header
 board/backtest.py      12-season backtest vs the closing line
 board/tune.py          Parameter experiments on the same harness
+board/residual_test.py Does the model add information beyond the close?
+board/upset_test.py    Do the sims' upset calls win? (Upset watch record)
 board/learn.py         Grades favorites, leans, sim log (per version), crew
 board/settle.py        Grades saved tickets against ESPN finals
 board/crew.py          Folds all users' tickets into the season ledgers
@@ -86,6 +90,12 @@ Full notes in `board/sim.py`'s header; evidence in `docs/backtests.md`.
   — early changes are mostly planned and already priced. Full tables in
   `docs/backtests.md`.
 
+**Upset watch:** games where the sims pick the underdog outright.
+Backtest (249 games): the dogs won 40.2% vs 40.3% implied, so the
+section prints that record and calls them live dogs, not locks.
+Build-my-own allows one spread, one total, one ML side per game and one
+side per prop (tapping another rung swaps it); TD scorers stack.
+
 **Honest standing:** the closing line is better than the model
 (Brier .2084 vs .2175 on the backtest). The board's "Sims' calls" section
 says so in its header. The model's value is independence + the availability
@@ -126,6 +136,8 @@ layer, and its live record is graded per version so any regression shows.
 - `judgments.jsonl` — the weekly "read": notes + at most 1–2 gradeable
   leans, never edited after the fact (material news appends dated notes).
   Record so far: 1–2.
+- `upsets.jsonl`: every "Upset watch" call (sims ≥50% on the dog and
+  ≥10 pts over market), first sighting, graded by `learn.py`.
 - `tickets.jsonl` / `picks.jsonl` — every user's saved tickets and legs,
   kept even if deleted from the board; feeds crew standings/calibration.
 
