@@ -109,6 +109,40 @@ def fetch_nfl_news():
     return by_team
 
 
+PW_URL = ("https://github.com/nflverse/nflverse-data/releases/download/"
+          "stats_player/stats_player_week_{season}.csv")
+
+
+def fetch_qb_starters(season):
+    """Each team's starting QB, defined by data, not memory: the
+    season pass-attempt leader in nflverse's player-week stats. Keeps
+    the QB-availability dock from firing on a hurt backup."""
+    import csv
+    import io
+    alias = {"WAS": "WSH", "LA": "LAR", "JAC": "JAX", "ARZ": "ARI"}
+    try:
+        out = subprocess.run(["curl", "-sSgL", "--max-time", "30",
+                              PW_URL.format(season=season)],
+                             capture_output=True, check=True)
+        rows = csv.DictReader(io.StringIO(out.stdout.decode()))
+    except Exception:
+        return {}
+    att = {}
+    for r in rows:
+        if (r.get("position") != "QB"
+                or r.get("season_type", "REG") != "REG"):
+            continue
+        t = alias.get(r["team"], r["team"])
+        n = r.get("player_display_name", "")
+        try:
+            a = int(float(r.get("attempts") or 0))
+        except ValueError:
+            continue
+        att.setdefault(t, {})
+        att[t][n] = att[t].get(n, 0) + a
+    return {t: max(qbs, key=qbs.get) for t, qbs in att.items() if qbs}
+
+
 TD_TAB = ("https://sbapi.pa.sportsbook.fanduel.com/api/event-page"
           "?_ak=FhMFpcPWXMeyZxOx&eventId={eid}&tab=td-scorer-props")
 
@@ -418,6 +452,59 @@ def build_snapshot():
             c["p"] = round(c["p"], 5)
             props.append(c)
 
+    # Availability, news, weather — fetched BEFORE the model so it can
+    # weigh them; attached to the game cards here too.
+    inj_by_team = fetch_injuries()
+    news_by_team = fetch_news()
+    for extra in (fetch_rotowire, fetch_nfl_news):
+        for ab, heads in extra().items():
+            rows = news_by_team.setdefault(ab, [])
+            for h in heads:
+                if h not in rows and len(rows) < 3:
+                    rows.append(h)
+    status_by_name = {_norm_name(r["name"]): r["status"]
+                      for rows in inj_by_team.values() for r in rows}
+    starters = fetch_qb_starters(datetime.utcnow().year)
+    for g in games:
+        away, home = g["matchup"].split(" @ ")
+        g["inj"] = {t: inj_by_team.get(t, [])[:4] for t in (away, home)
+                    if inj_by_team.get(t)}
+        heads = [h for t in (away, home)
+                 for h in news_by_team.get(t, [])[:2]]
+        if heads:
+            g["news"] = heads[:3]
+        wx = fetch_weather(home, g["start"])
+        if wx:
+            g["wx"] = wx
+
+    QB_DOCK = 4.0  # points: conservative end of the playbook's 3-7
+
+    def qb_dock(team):
+        """Dock only when the team's ACTUAL starter — the season pass-
+        attempt leader per nflverse — is Out or Doubtful. A hurt backup
+        is not a downgrade; Questionable stays the read's call."""
+        qb = starters.get(team)
+        if not qb:
+            return 0.0
+        for r in inj_by_team.get(team, []):
+            if (r["pos"] == "QB" and r["status"] in ("Out", "Doubtful")
+                    and _norm_name(r["name"]) == _norm_name(qb)):
+                return QB_DOCK
+        return 0.0
+
+    def wx_shift(g):
+        """Wind and rain press totals outdoors; domes exempt, and a
+        retractable is assumed closed in bad weather."""
+        w = g.get("wx") or {}
+        if w.get("roof") != "open" or w.get("wind") is None:
+            return 0.0
+        s = 0.0
+        if w["wind"] >= 15:
+            s -= min(0.3 * (w["wind"] - 10), 6.0)
+        if (w.get("pop") or 0) >= 60:
+            s -= 1.0
+        return round(s, 1)
+
     # Model layer: run the simulator on each game — projected score,
     # win probability, and the prediction log that grades the model.
     elo_path = os.path.join(os.path.dirname(os.path.dirname(
@@ -439,7 +526,13 @@ def build_snapshot():
         with open(simlog_path, "a") as slf:
             for g in games:
                 away, home = g["matchup"].split(" @ ")
-                pred = model.predict(home, away)
+                dh, da, ts = qb_dock(home), qb_dock(away), wx_shift(g)
+                pred = model.predict(home, away, dock_home=dh,
+                                     dock_away=da, total_shift=ts)
+                if dh or da or ts:
+                    g["adj"] = {"dock": {t: p for t, p in
+                                         ((home, dh), (away, da)) if p},
+                                "wx": ts}
                 fav = g["sides"][0]["team"]
                 g["ep"] = (pred["p_home"] if fav == home
                            else round(1.0 - pred["p_home"], 4))
@@ -476,28 +569,7 @@ def build_snapshot():
         for r in closes.values():
             f.write(json.dumps(r) + "\n")
 
-    # Injury layer: attach key injuries per game, tag injured prop players.
-    inj_by_team = fetch_injuries()
-    news_by_team = fetch_news()
-    for extra in (fetch_rotowire, fetch_nfl_news):
-        for ab, heads in extra().items():
-            rows = news_by_team.setdefault(ab, [])
-            for h in heads:
-                if h not in rows and len(rows) < 3:
-                    rows.append(h)
-    status_by_name = {_norm_name(r["name"]): r["status"]
-                      for rows in inj_by_team.values() for r in rows}
-    for g in games:
-        away, home = g["matchup"].split(" @ ")
-        g["inj"] = {t: inj_by_team.get(t, [])[:4] for t in (away, home)
-                    if inj_by_team.get(t)}
-        heads = [h for t in (away, home)
-                 for h in news_by_team.get(t, [])[:2]]
-        if heads:
-            g["news"] = heads[:3]
-        wx = fetch_weather(home, g["start"])
-        if wx:
-            g["wx"] = wx
+    # Tag injured players on props and TD scorers.
     for c in props:
         st = status_by_name.get(_norm_name(c["player"]))
         if st:
@@ -527,12 +599,13 @@ def build_snapshot():
         away_t, home_t = g["matchup"].split(" @ ")
         ps = (f"Sims see {home_t} {proj['h']}\u2013{proj['a']} {away_t}. "
               if proj else "")
-        if edge < 0 and _qb_hurt(dog):
+        docked = set(((g.get("adj") or {}).get("dock") or {}))
+        if edge < 0 and _qb_hurt(dog) and dog not in docked:
             g["say"] = (ps + f"Our numbers only make {fav} {epc}, but the market's "
                         f"{mp} knows {dog}'s QB is hurt — gap explained, "
                         f"no edge.")
             g["sayx"] = True
-        elif edge > 0 and _qb_hurt(fav):
+        elif edge > 0 and _qb_hurt(fav) and fav not in docked:
             g["say"] = (ps + f"Our numbers like {fav} at {epc} vs the market's "
                         f"{mp}, but {fav}'s QB injury explains the market's "
                         f"caution.")
@@ -545,6 +618,20 @@ def build_snapshot():
             g["say"] = (ps + f"{fav} have played better than this price: our "
                         f"numbers say {epc}, the market only {mp}. Value on "
                         f"{fav} unless there's news the scores can't see.")
+
+    # Say what the model already weighed, so nobody double-counts it.
+    for g in games:
+        adj = g.get("adj") or {}
+        bits = [f"sims dock {t} {p:g} pts (starting QB Out/Doubtful)"
+                for t, p in (adj.get("dock") or {}).items()]
+        if adj.get("wx"):
+            bits.append(f"weather trims the total {abs(adj['wx']):g} pts")
+        if bits:
+            extra = "Already in the sims: " + "; ".join(bits) + "."
+            if g.get("say"):
+                g["say"] += " " + extra
+            else:
+                g["say"], g["sayx"] = extra, True
 
     stamp = (datetime.now(np._EASTERN) if np._EASTERN
              else datetime.utcnow()).strftime("%b %d, %Y %I:%M %p ET")

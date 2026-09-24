@@ -45,7 +45,10 @@ EPA_BLEND_K = 6.0  # games until EPA carries half the margin estimate
 
 
 class Model:
-    VERSION = 2  # v2: Elo margin blended with nflverse EPA differential
+    # v2: Elo margin blended with nflverse EPA differential.
+    # v3: caller-supplied availability dock (starting QB Out/Doubtful)
+    #     and weather shift on totals now weigh on the prediction.
+    VERSION = 3
 
     def __init__(self, path=ELO_PATH):
         d = json.load(open(path))
@@ -54,8 +57,13 @@ class Model:
         self.epa = d.get("epa", {})
         self.league_total = d.get("league_total", 44.0)
 
-    def predict(self, home, away, neutral=False):
-        """Full outcome read for one game."""
+    def predict(self, home, away, neutral=False,
+                dock_home=0.0, dock_away=0.0, total_shift=0.0):
+        """Full outcome read for one game. The caller that knows the
+        injury report and forecast passes `dock_*` (points off a team
+        whose starting QB is Out/Doubtful) and `total_shift` (wind and
+        rain pressing the total, usually negative). Zero means the
+        prediction stays pure scores-and-efficiency."""
         ra = self.ratings.get(home, 1500.0) + (0.0 if neutral else HFA)
         rb = self.ratings.get(away, 1500.0)
         mu_margin = (ra - rb) / 25.0
@@ -73,6 +81,7 @@ class Model:
             n_min = min(eh["n"], ea["n"])
             w = n_min / (n_min + EPA_BLEND_K)
             mu_margin = (1.0 - w) * mu_margin + w * m_epa
+        mu_margin += dock_away - dock_home
         sh = self.scoring.get(home, {})
         sa = self.scoring.get(away, {})
         half = self.league_total / 2.0
@@ -81,6 +90,10 @@ class Model:
         n_eff = min(sh.get("n", 0), sa.get("n", 0))
         shrink = n_eff / (n_eff + SHRINK_GAMES)
         mu_total = self.league_total + (raw_total - self.league_total) * shrink
+        # A missing starter lowers his own team's scoring too; weather
+        # presses both sides. Floor keeps the distribution sane.
+        mu_total = max(24.0, mu_total - 0.5 * (dock_home + dock_away)
+                       + total_shift)
         # Modal final score from 10,000 draws.
         counts = {}
         for _ in range(SIMS):
