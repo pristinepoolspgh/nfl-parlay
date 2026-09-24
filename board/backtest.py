@@ -1,54 +1,116 @@
 #!/usr/bin/env python3
-"""Backtest the sim's margin model on real seasons.
+"""Backtest the margin model against the closing line, 2015-2026.
 
 Usage:  python3 board/backtest.py
 
-Replays 2025 and 2026-to-date game by game. Every prediction uses only
-what was knowable before kickoff: Elo ratings built from prior finals,
-and nflverse EPA from prior weeks of the same season. Grades winner
-accuracy, margin MAE, and Brier score for a grid of EPA blend weights
-(w = n/(n+K); smaller K trusts EPA sooner), plus pure Elo and pure
-EPA. Whatever wins here is what the live model should run — and if
-pure Elo wins, the blend deserves to die.
+Data: nflverse games.csv (results + CLOSING spread and moneylines,
+franchises unified across relocations) and nflverse weekly team EPA
+per season. Elo replays 2006 onward (warm-up years unscored);
+predictions score 2015+ regular season, week 5 onward, using only
+information from before each kickoff.
 
-Warm-up: predictions start week 5 of 2025 (Elo needs footing) and
-week 2 of 2026. Playoffs update ratings but are not scored (neutral
-sites, rest asymmetries). Where our own logged market lines overlap
-(2026 week 2 favorites in memory/results.jsonl), the market's Brier
-is printed beside the models' on those same games.
+Models: pure Elo; Elo/EPA blends (w = n/(n+K)) with RAW EPA and with
+OPPONENT-ADJUSTED EPA (iterative: each offense judged against the
+quality of defenses faced, and vice versa); pure adjusted EPA.
+Benchmark: the closing line itself — de-vigged moneyline for Brier,
+spread for margin MAE. Note the market benchmark carries information
+the models can't have (injuries, QB changes, weather), so matching it
+is strong and beating it would be extraordinary.
+
+Decision rule, fixed in advance: a blend replaces pure Elo only if
+its paired Brier improvement has a 95% CI excluding zero. Winner% is
+reported but decides nothing — it ignores calibration.
 """
 import csv
 import io
-import json
 import math
 import os
 import subprocess
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import elo
-
+GAMES_URL = ("https://raw.githubusercontent.com/nflverse/nfldata/"
+             "master/data/games.csv")
+EPA_URL = ("https://github.com/nflverse/nflverse-data/releases/download/"
+           "stats_team/stats_team_week_{season}.csv")
+ALIAS = {"SD": "LAC", "OAK": "LV", "STL": "LAR", "LA": "LAR",
+         "WAS": "WSH", "JAC": "JAX", "ARZ": "ARI"}
+K_ELO, HFA, REGRESS = 20.0, 48.0, 1 / 3
 MARGIN_SD = 13.2
-GRID = [None, 12.0, 8.0, 6.0, 4.0, 2.0, 0.0]  # None = pure Elo, 0 = pure EPA
+SCORE_FROM, WARM_FROM, WEEK_FROM = 2015, 2006, 5
+GRID = [("pure Elo", None, False), ("raw K=12", 12.0, False),
+        ("raw K=6", 6.0, False), ("raw K=3", 3.0, False),
+        ("adj K=12", 12.0, True), ("adj K=6", 6.0, True),
+        ("adj K=3", 3.0, True), ("pure adjEPA", 0.0, True)]
 
 
-def label(k):
-    return "pure Elo" if k is None else "pure EPA" if k == 0 else f"K={k:g}"
+def curl(url):
+    out = subprocess.run(["curl", "-sSgL", "--max-time", "60", url],
+                         capture_output=True, check=True)
+    return out.stdout.decode()
 
 
 def _phi(x):
     return 0.5 * (1.0 + math.erf(x / math.sqrt(2.0)))
 
 
-def epa_by_week(season):
-    """{team: sorted [(week, epa_for, epa_against)]} from nflverse."""
-    out = subprocess.run(["curl", "-sSgL", "--max-time", "30",
-                          elo.EPA_URL.format(season=season)],
-                         capture_output=True, check=True)
-    rows = list(csv.DictReader(io.StringIO(out.stdout.decode())))
-    alias = {"WAS": "WSH", "LA": "LAR", "JAC": "JAX", "ARZ": "ARI"}
-    per_game = {}  # (team, week) -> epa
-    opp = {}       # (team, week) -> opponent
+def devig(home_ml, away_ml):
+    def imp(o):
+        o = float(o)
+        return 100.0 / (o + 100.0) if o > 0 else -o / (-o + 100.0)
+    a, b = imp(home_ml), imp(away_ml)
+    return a / (a + b)
+
+
+def load_games():
+    rows = list(csv.DictReader(io.StringIO(curl(GAMES_URL))))
+    games = []
+    for r in rows:
+        try:
+            season, week = int(r["season"]), int(r["week"])
+            hs, as_ = int(r["home_score"]), int(r["away_score"])
+        except (ValueError, KeyError):
+            continue
+        if season < WARM_FROM or season > 2026:
+            continue
+        games.append({
+            "season": season, "week": week, "reg": r["game_type"] == "REG",
+            "home": ALIAS.get(r["home_team"], r["home_team"]),
+            "away": ALIAS.get(r["away_team"], r["away_team"]),
+            "hs": hs, "as": as_,
+            "neutral": r.get("location") == "Neutral",
+            "spread": float(r["spread_line"]) if r.get("spread_line") else None,
+            "hml": r.get("home_moneyline") or None,
+            "aml": r.get("away_moneyline") or None})
+    games.sort(key=lambda g: (g["season"], 0 if g["reg"] else 1, g["week"]))
+    return games
+
+
+def elo_expected(ra, rb):
+    return 1.0 / (1.0 + 10 ** (-(ra - rb) / 400.0))
+
+
+def elo_update(ratings, g):
+    ra = ratings.setdefault(g["home"], 1500.0)
+    rb = ratings.setdefault(g["away"], 1500.0)
+    hfa = 0.0 if g["neutral"] else HFA
+    exp_home = elo_expected(ra + hfa, rb)
+    actual = 0.5 if g["hs"] == g["as"] else (1.0 if g["hs"] > g["as"] else 0.0)
+    margin = abs(g["hs"] - g["as"]) or 1
+    wdiff = (ra + hfa - rb) if g["hs"] >= g["as"] else (rb - ra - hfa)
+    mov = math.log(margin + 1) * (2.2 / (wdiff * 0.001 + 2.2))
+    delta = K_ELO * mov * (actual - exp_home)
+    ratings[g["home"]] = ra + delta
+    ratings[g["away"]] = rb - delta
+
+
+def season_epa(season):
+    """[(team, week, opp, epa)] regular-season rows, or []."""
+    try:
+        rows = list(csv.DictReader(io.StringIO(
+            curl(EPA_URL.format(season=season)))))
+    except Exception:
+        return []
+    out = []
     for r in rows:
         if r.get("season_type") != "REG":
             continue
@@ -58,129 +120,127 @@ def epa_by_week(season):
             w = int(r["week"])
         except (ValueError, KeyError):
             continue
-        t = alias.get(r["team"], r["team"])
-        o = alias.get(r.get("opponent_team", ""), r.get("opponent_team", ""))
-        per_game[(t, w)] = per_game.get((t, w), 0.0) + e
-        opp[(t, w)] = o
-
-    def upto(team, week):
-        """Off/def EPA per game from weeks strictly before `week`."""
-        offs, defs = [], []
-        for (t, w), e in per_game.items():
-            if w >= week:
-                continue
-            if t == team:
-                offs.append(e)
-            elif opp.get((t, w)) == team:
-                defs.append(e)
-        if not offs:
-            return None
-        return {"off": sum(offs) / len(offs),
-                "def": sum(defs) / len(defs) if defs else 0.0,
-                "n": len(offs)}
-    return upto
+        out.append((ALIAS.get(r["team"], r["team"]), w,
+                    ALIAS.get(r.get("opponent_team", ""),
+                              r.get("opponent_team", "")), e))
+    return out
 
 
-def margin_pred(ratings, g, epa_fn, week, k):
-    ra = ratings.get(g["home"], 1500.0) + (0.0 if g["neutral"] else elo.HFA)
-    rb = ratings.get(g["away"], 1500.0)
-    m_elo = (ra - rb) / 25.0
-    if k is None:
-        return m_elo
-    eh = epa_fn(g["home"], week)
-    ea = epa_fn(g["away"], week)
-    if not eh or not ea:
-        return m_elo
-    hfa_pts = 0.0 if g["neutral"] else elo.HFA / 25.0
-    m_epa = (eh["off"] - ea["off"]) + (ea["def"] - eh["def"]) + hfa_pts
-    if k == 0:
-        return m_epa
-    n = min(eh["n"], ea["n"])
-    w = n / (n + k)
-    return (1.0 - w) * m_elo + w * m_epa
+def snapshots(rows, adjust):
+    """{week: {team: (off_rel, def_rel, n)}} using weeks < week.
+    Values are relative to league average; margin uses
+    (offH - offA) + (defA - defH). Adjusted mode iterates so each
+    offense is judged against the defenses it faced."""
+    weeks = sorted({w for _, w, _, _ in rows})
+    snaps = {}
+    for upto in weeks[1:] + [max(weeks) + 1]:
+        sub = [(t, w, o, e) for t, w, o, e in rows if w < upto]
+        if not sub:
+            continue
+        league = sum(e for *_, e in sub) / len(sub)
+        by_team, faced = {}, {}
+        for t, w, o, e in sub:
+            by_team.setdefault(t, []).append((o, e))
+        allowed = {}
+        for t, gs in by_team.items():
+            for o, e in gs:
+                allowed.setdefault(o, []).append((t, e))
+        off = {t: sum(e for _, e in gs) / len(gs) - league
+               for t, gs in by_team.items()}
+        dfn = {t: sum(e for _, e in gs) / len(gs) - league
+               for t, gs in allowed.items()}
+        if adjust:
+            for _ in range(6):
+                off = {t: sum(e - league - dfn.get(o, 0.0)
+                              for o, e in gs) / len(gs)
+                       for t, gs in by_team.items()}
+                dfn = {t: sum(e - league - off.get(o, 0.0)
+                              for o, e in gs) / len(gs)
+                       for t, gs in allowed.items()}
+        snaps[upto] = {t: (off.get(t, 0.0), dfn.get(t, 0.0),
+                           len(by_team.get(t, [])))
+                       for t in by_team}
+    return snaps
 
 
 def main():
-    preds = {k: [] for k in GRID}   # (pred_margin, actual_margin)
-    y26 = {k: [] for k in GRID}
-    wk2 = {}                        # frozenset(teams) -> {k: p_home}, home
+    games = load_games()
+    print(f"{len(games)} games loaded 2006-2026; scoring "
+          f"{SCORE_FROM}+ REG week {WEEK_FROM}+ with closing lines")
     ratings = {}
+    cur_season = None
+    epa_raw = epa_adj = None
+    rows = []  # per scored game: dict of model margins + market + actual
 
-    for season, start_pred in ((2025, 5), (2026, 2)):
-        epa_fn = epa_by_week(season)
-        for w in range(1, 19):
-            games = elo.fetch_week(season, 2, w)
-            if not games:
-                break
-            for g in games:
-                if w >= start_pred and g["hs"] != g["as"]:
-                    actual = g["hs"] - g["as"]
-                    for k in GRID:
-                        m = margin_pred(ratings, g, epa_fn, w, k)
-                        preds[k].append((m, actual))
-                        if season == 2026:
-                            y26[k].append((m, actual))
-                    if season == 2026 and w == 2:
-                        wk2[frozenset((g["home"], g["away"]))] = {
-                            "home": g["home"],
-                            "p": {k: _phi(margin_pred(
-                                ratings, g, epa_fn, w, k) / MARGIN_SD)
-                                for k in GRID},
-                            "won_home": g["hs"] > g["as"]}
-                elo.update(ratings, g)
-        if season == 2025:
-            for st3w in range(1, 6):
-                for g in elo.fetch_week(2025, 3, st3w):
-                    elo.update(ratings, g)
-            for t in ratings:
-                ratings[t] = 1500.0 + (ratings[t] - 1500.0) * (
-                    1 - elo.SEASON_REGRESS)
+    for g in games:
+        if g["season"] != cur_season:
+            if cur_season is not None:
+                for t in ratings:
+                    ratings[t] = 1500.0 + (ratings[t] - 1500.0) * (1 - REGRESS)
+            cur_season = g["season"]
+            epa_raw = epa_adj = None
+            if cur_season >= SCORE_FROM:
+                er = season_epa(cur_season)
+                epa_raw = snapshots(er, adjust=False)
+                epa_adj = snapshots(er, adjust=True)
+        if (g["reg"] and g["season"] >= SCORE_FROM
+                and g["week"] >= WEEK_FROM and g["hs"] != g["as"]
+                and g["spread"] is not None and g["hml"] and g["aml"]):
+            ra = ratings.get(g["home"], 1500.0) + (0 if g["neutral"] else HFA)
+            rb = ratings.get(g["away"], 1500.0)
+            m_elo = (ra - rb) / 25.0
+            hfa_pts = 0.0 if g["neutral"] else HFA / 25.0
+            row = {"actual": g["hs"] - g["as"], "spread": g["spread"],
+                   "pm": devig(g["hml"], g["aml"]), "m": {}}
+            for name, k, adj in GRID:
+                if k is None:
+                    row["m"][name] = m_elo
+                    continue
+                snaps = epa_adj if adj else epa_raw
+                snap = snaps.get(g["week"], {}) if snaps else {}
+                eh, ea = snap.get(g["home"]), snap.get(g["away"])
+                if not eh or not ea:
+                    row["m"][name] = m_elo
+                    continue
+                m_epa = (eh[0] - ea[0]) + (ea[1] - eh[1]) + hfa_pts
+                if k == 0:
+                    row["m"][name] = m_epa
+                else:
+                    n = min(eh[2], ea[2])
+                    w = n / (n + k)
+                    row["m"][name] = (1 - w) * m_elo + w * m_epa
+            rows.append(row)
+        elo_update(ratings, g)
 
-    def report(name, rows_by_k):
-        print(f"\n{name} ({len(rows_by_k[None])} games)")
-        print(f"{'model':<10}{'winner%':>9}{'MAE':>7}{'Brier':>8}")
-        for k in GRID:
-            rows = rows_by_k[k]
-            if not rows:
-                continue
-            acc = sum((m > 0) == (a > 0) for m, a in rows) / len(rows)
-            mae = sum(abs(m - a) for m, a in rows) / len(rows)
-            brier = sum((_phi(m / MARGIN_SD) - (1.0 if a > 0 else 0.0)) ** 2
-                        for m, a in rows) / len(rows)
-            print(f"{label(k):<10}{acc*100:>8.1f}%{mae:>7.2f}{brier:>8.4f}")
-
-    report("2025 wk5+ & 2026 wk2+", preds)
-    report("2026 only (wk2+)", y26)
-
-    # Market comparison on our logged 2026 week-2 favorites.
-    res_path = os.path.join(os.path.dirname(os.path.dirname(
-        os.path.abspath(__file__))), "memory", "results.jsonl")
-    if os.path.exists(res_path):
-        joined = []
-        for line in open(res_path):
-            try:
-                r = json.loads(line)
-            except ValueError:
-                continue
-            away, home = r["matchup"].split(" @ ")
-            g = wk2.get(frozenset((home, away)))
-            if not g:
-                continue
-            mkt_p_fav = r["p_fav"]
-            fav_won = r["fav_won"]
-            joined.append((mkt_p_fav, fav_won, g, r["fav"], home))
-        if joined:
-            print(f"\nvs market, 2026 wk2 favorites ({len(joined)} games)")
-            mb = sum((p - (1.0 if wn else 0.0)) ** 2
-                     for p, wn, *_ in joined) / len(joined)
-            print(f"{'market':<10}{'':>9}{'':>7}{mb:>8.4f}")
-            for k in GRID:
-                b = 0.0
-                for _, _, g, fav, home in joined:
-                    p_fav = g["p"][k] if fav == home else 1.0 - g["p"][k]
-                    won = g["won_home"] if fav == home else not g["won_home"]
-                    b += (p_fav - (1.0 if won else 0.0)) ** 2
-                print(f"{label(k):<10}{'':>9}{'':>7}{b/len(joined):>8.4f}")
+    n = len(rows)
+    seasons = SCORE_FROM
+    print(f"\nScored: {n} games ({2026 - SCORE_FROM + 1} seasons)")
+    mkt_brier = sum((r["pm"] - (1.0 if r["actual"] > 0 else 0.0)) ** 2
+                    for r in rows) / n
+    mkt_mae = sum(abs(r["spread"] - r["actual"]) for r in rows) / n
+    mkt_acc = sum((r["spread"] > 0) == (r["actual"] > 0)
+                  for r in rows if r["spread"] != 0) / \
+        sum(1 for r in rows if r["spread"] != 0)
+    print(f"\n{'model':<13}{'winner%':>8}{'MAE':>7}{'Brier':>8}"
+          f"{'ΔBrier vs Elo (95% CI)':>26}{'Δ vs market':>12}")
+    print(f"{'CLOSING LINE':<13}{mkt_acc*100:>7.1f}%{mkt_mae:>7.2f}"
+          f"{mkt_brier:>8.4f}{'—':>26}{'—':>12}")
+    base = [( _phi(r['m']['pure Elo'] / MARGIN_SD)
+              - (1.0 if r["actual"] > 0 else 0.0)) ** 2 for r in rows]
+    for name, k, adj in GRID:
+        bs = [(_phi(r["m"][name] / MARGIN_SD)
+               - (1.0 if r["actual"] > 0 else 0.0)) ** 2 for r in rows]
+        acc = sum((r["m"][name] > 0) == (r["actual"] > 0)
+                  for r in rows) / n
+        mae = sum(abs(r["m"][name] - r["actual"]) for r in rows) / n
+        brier = sum(bs) / n
+        diffs = [b - a for b, a in zip(bs, base)]
+        mean = sum(diffs) / n
+        var = sum((d - mean) ** 2 for d in diffs) / (n - 1)
+        ci = 1.96 * math.sqrt(var / n)
+        dm = brier - mkt_brier
+        print(f"{name:<13}{acc*100:>7.1f}%{mae:>7.2f}{brier:>8.4f}"
+              f"{mean:>+13.4f} ±{ci:.4f}{dm:>+12.4f}")
 
 
 if __name__ == "__main__":
