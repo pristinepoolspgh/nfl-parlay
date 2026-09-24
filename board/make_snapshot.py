@@ -9,11 +9,13 @@ week number and in-progress scores, then splices the data into
 board/template.html. Fetches go through curl so it also works behind
 proxies that filter user agents.
 """
+import html as htmllib
 import json
 import os
+import re
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import nfl_parlay as np
@@ -31,6 +33,50 @@ np._get_json = curl_json
 INJ_URL = ("https://site.api.espn.com/apis/site/v2/sports/football/nfl/"
            "injuries")
 POS_RANK = {"QB": 0, "RB": 1, "WR": 2, "TE": 3}
+
+NFL_NEWS_URL = "https://www.nfl.com/news/"
+NICKNAMES = {
+    "Cardinals": "ARI", "Falcons": "ATL", "Ravens": "BAL", "Bills": "BUF",
+    "Panthers": "CAR", "Bears": "CHI", "Bengals": "CIN", "Browns": "CLE",
+    "Cowboys": "DAL", "Broncos": "DEN", "Lions": "DET", "Packers": "GB",
+    "Texans": "HOU", "Colts": "IND", "Jaguars": "JAX", "Chiefs": "KC",
+    "Raiders": "LV", "Chargers": "LAC", "Rams": "LAR", "Dolphins": "MIA",
+    "Vikings": "MIN", "Patriots": "NE", "Saints": "NO", "Giants": "NYG",
+    "Jets": "NYJ", "Eagles": "PHI", "Steelers": "PIT", "49ers": "SF",
+    "Seahawks": "SEA", "Buccaneers": "TB", "Titans": "TEN",
+    "Commanders": "WSH"}
+
+
+def fetch_nfl_news():
+    """Recent NFL.com headlines keyed by team abbreviation. The site
+    has no public JSON feed, but every article card carries an
+    accessible label with headline + publish date; team-tag by
+    nickname match and keep the last few days only."""
+    by_team = {}
+    try:
+        out = subprocess.run(["curl", "-sSgL", "--max-time", "25",
+                              NFL_NEWS_URL],
+                             capture_output=True, check=True)
+        text = out.stdout.decode("utf-8", "replace")
+    except Exception:
+        return by_team
+    cutoff = datetime.utcnow() - timedelta(days=5)
+    for m in re.finditer(r'aria-label="(?:[a-z]+ - )?Read article: '
+                         r'([^"]+), ([A-Z][a-z]+ \d{1,2}, \d{4})"', text):
+        head = htmllib.unescape(m.group(1)).strip()
+        try:
+            when = datetime.strptime(m.group(2), "%B %d, %Y")
+        except ValueError:
+            continue
+        if when < cutoff:
+            continue
+        for nick, ab in NICKNAMES.items():
+            if nick in head:
+                rows = by_team.setdefault(ab, [])
+                if head not in rows and len(rows) < 3:
+                    rows.append(head)
+    return by_team
+
 
 TD_TAB = ("https://sbapi.pa.sportsbook.fanduel.com/api/event-page"
           "?_ak=FhMFpcPWXMeyZxOx&eventId={eid}&tab=td-scorer-props")
@@ -401,6 +447,11 @@ def build_snapshot():
     # Injury layer: attach key injuries per game, tag injured prop players.
     inj_by_team = fetch_injuries()
     news_by_team = fetch_news()
+    for ab, heads in fetch_nfl_news().items():
+        rows = news_by_team.setdefault(ab, [])
+        for h in heads:
+            if h not in rows and len(rows) < 3:
+                rows.append(h)
     status_by_name = {_norm_name(r["name"]): r["status"]
                       for rows in inj_by_team.values() for r in rows}
     for g in games:
