@@ -23,7 +23,7 @@ grades itself weekly. Nothing here is betting advice, and the board says so.
 | Surface | URL | What it is |
 |---|---|---|
 | Full app | https://claude.ai/artifact/SuKFMDPsudMcWBdYktJ9sE | Board + tracker + crew standings + weekly read ("anyone with the link"; saving needs a Claude login) |
-| Public mirror | https://nfl-parlay-inky.vercel.app | Static copy, no login, no tracker; redeploys automatically on every push to this repo (`web/index.html`, `vercel.json`) |
+| Public mirror | https://nfl-parlay-inky.vercel.app | Static copy, no login, no tracker; redeploys automatically on every push to this repo (`web/index.html`, `vercel.json`). Installable to the Home Screen (`web/manifest.webmanifest`, icons, `web/sw.js`: network-first, last board offline). On open, on return to the app, and every 5 min it re-fetches itself and, if the board changed, shows what matters (finals, starters ruled Out/Doubtful, new QB docks, new upset calls, favorites flipping, prices moving 3+ pts); Refresh keeps the user's ticket. |
 | Repo | github.com/pristinepoolspgh/nfl-parlay | Everything: code, ledgers, docs |
 
 ## Components
