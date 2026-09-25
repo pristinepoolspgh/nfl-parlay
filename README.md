@@ -40,6 +40,7 @@ board/backtest.py      12-season backtest vs the closing line
 board/tune.py          Parameter experiments on the same harness
 board/residual_test.py Does the model add information beyond the close?
 board/upset_test.py    Do the sims' upset calls win? (Upset watch record)
+board/dvp.py           Defense vs position tables + stability test
 board/learn.py         Grades favorites, leans, sim log (per version), crew
 board/settle.py        Grades saved tickets against ESPN finals
 board/crew.py          Folds all users' tickets into the season ledgers
@@ -93,6 +94,10 @@ Full notes in `board/sim.py`'s header; evidence in `docs/backtests.md`.
 **Upset watch:** games where the sims pick the underdog outright.
 Backtest (249 games): the dogs won 40.2% vs 40.3% implied, so the
 section prints that record and calls them live dogs, not locks.
+Every game has a "player props" panel: all of FanDuel's main O/U props
+and anytime-TD prices for every player, each tagged with what the
+opposing defense allows to that position this year and last (context,
+not a model input; see docs/backtests.md seventh pass).
 Build-my-own allows one spread, one total, one ML side per game and one
 side per prop (tapping another rung swaps it); TD scorers stack.
 

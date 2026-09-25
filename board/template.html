@@ -180,6 +180,16 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .ladder .lab{display:block; margin:8px 0 4px; font:600 10.5px/1 Barlow, sans-serif; letter-spacing:.07em; text-transform:uppercase; color:var(--faint)}
 .ladder .chips{display:flex; flex-wrap:wrap; gap:5px}
 button.side.mini{padding:6px 7px; font-size:12px}
+.pprops{grid-column:2 / 4; margin-top:6px}
+.pprops .team{display:block; margin:10px 0 2px; font:700 12px/1 "Barlow Condensed", sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+.pp{padding:8px 0; border-top:1px dashed var(--edge)}
+.pp .nm{font-weight:600; font-size:14px}
+.pp .nm small{color:var(--faint); font-weight:600; font-size:11px; margin-left:4px}
+.pp .chips{display:flex; flex-wrap:wrap; gap:5px; margin-top:5px}
+.dvp{display:block; color:var(--muted); font-size:11.5px; margin-top:2px}
+.dvp i{font-style:normal; font-weight:600; color:var(--go)}
+.dvp b{font-weight:600; color:#C74545}
+.pnote{font-size:11.5px; color:var(--faint); margin:8px 0 2px; line-height:1.4}
 button.side.mini small{font-size:9.5px}
 .utag{
   display:inline-block; margin-left:6px; padding:2px 5px; border-radius:4px;
@@ -508,7 +518,7 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
   <h2 id="simhead" hidden>Sims&rsquo; calls <small>&middot; where the model most disagrees with the price &middot; research, not edge: across 2,193 graded games these disagreements predicted nothing beyond the closing line &mdash; shown because they&rsquo;re graded, not because they&rsquo;re right</small></h2>
   <section class="card" id="simcard" hidden><ul class="rows" id="simboard"></ul></section>
 
-  <h2>Props <small>&middot; strongest priced sides, one per player</small></h2>
+  <h2>Props <small>&middot; strongest priced sides, one per player &middot; every player&rsquo;s props are under each game</small></h2>
   <section class="card"><ul class="rows" id="propboard"></ul></section>
 
   <h2 id="tdhead" hidden>TD scorers <small>&middot; anytime TD &middot; one-sided market, so odds carry the book&rsquo;s vig</small></h2>
@@ -625,6 +635,51 @@ D.games.forEach(g => (D.alts[g.matchup] || []).forEach(r => {
     p: r.p, odds: r.odds, market: r.market, sel: r.sel, alt: true,
     sub: g.matchup + " · " + kick(g.start)};
 }));
+// Every player's props and anytime-TD price, per game.
+const PLAYER = {};
+const shortType = t => t.replace("Passing", "Pass").replace("Rushing", "Rush")
+  .replace("Receiving", "Rec").replace("Total Receptions", "Receptions")
+  .replace("Attempts", "Att").replace("Completions", "Comp");
+D.games.forEach(g => ((D.menu || {})[g.matchup] || []).forEach(pl => {
+  PLAYER[pl.n] = {t: pl.t, pos: pl.pos, mu: g.matchup};
+  const sub = g.matchup + " · " + kick(g.start);
+  pl.pr.forEach(([type, line, mkt, op, oo, os, up, uo, us]) => {
+    ALL_LEGS[mkt + ":" + os] = {desc: `${pl.n} O ${line} ${shortType(type)}`,
+      team: null, p: op, odds: oo, market: mkt, sel: os, sub};
+    ALL_LEGS[mkt + ":" + us] = {desc: `${pl.n} U ${line} ${shortType(type)}`,
+      team: null, p: up, odds: uo, market: mkt, sel: us, sub};
+  });
+  if (pl.td) {
+    const [p, odds, mkt, sel] = pl.td;
+    const k = mkt + ":" + sel;
+    if (!ALL_LEGS[k]) ALL_LEGS[k] = {desc: `${pl.n} anytime TD`, team: null,
+      p, odds, market: mkt, sel, sub: "anytime TD · " + sub};
+  }
+}));
+
+// What the opposing defense allows to this player's position. Context,
+// not a model input: early-season ranks barely predict the rest of a
+// season (board/dvp.py --stability), and the prop price already knows.
+const ORD = n => n + (n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd"
+  : n % 10 === 3 && n !== 13 ? "rd" : "th");
+function dvpTag(name){
+  const pl = PLAYER[name];
+  if (!pl || !pl.t || !pl.pos || !D.dvp) return "";
+  const [away, home] = pl.mu.split(" @ ");
+  const opp = pl.t === away ? home : away;
+  const yrs = Object.keys(D.dvp).sort().reverse();
+  const bits = yrs.map((y, i) => {
+    const v = ((D.dvp[y] || {})[opp] || {})[pl.pos];
+    if (!v) return "";
+    const [rank, pts, g] = v;
+    const txt = `${ORD(rank)}-most ${i === 0 ? "this yr" : "last yr"}` +
+      (i === 0 ? ` (${g} g)` : "");
+    return rank <= 8 ? `<i>${txt}</i>` : rank >= 25 ? `<b>${txt}</b>` : txt;
+  }).filter(Boolean);
+  return bits.length
+    ? `<span class="dvp">${opp} D vs ${pl.pos}s: ${bits.join(" · ")}</span>` : "";
+}
+
 (D.simbets || []).forEach(r => {
   const k = r.market + ":" + r.sel;
   if (!ALL_LEGS[k]) ALL_LEGS[k] = {
@@ -1188,19 +1243,43 @@ $("slate").innerHTML = D.games.map((g, i) => {
   if (L.ov && L.un) main.push(`<span class="grp"><span class="lab">Total</span>${lineBtn(L.ov)}${lineBtn(L.un)}</span>`);
   const ladder = L.ladder.length
     ? `<button class="more" data-x="gl${i}">alt lines</button>` : "";
-  const lines = main.length || ladder
-    ? `<span class="lines">${main.join("")}${ladder}</span>` : "";
+  const hasPP = ((D.menu || {})[g.matchup] || []).length > 0;
+  const ppBtn = hasPP ? `<button class="more" data-x="gp${i}" data-mu="${esc(g.matchup)}">player props</button>` : "";
+  const lines = main.length || ladder || ppBtn
+    ? `<span class="lines">${main.join("")}${ladder}${ppBtn}</span>` : "";
   const ladderBox = L.ladder.length ? `<span class="ladder" id="gl${i}" hidden>${
     L.ladder.map(([lab, rs]) => `<span class="lab">${lab}</span><span class="chips">${
       rs.map(r => lineBtn(r, true)).join("")}</span>`).join("")}</span>` : "";
   const utag = g.upset ? `<span class="utag">sims: upset</span>` : "";
   return `<li style="--tc:${TEAMCOLOR[fav.team] || "var(--edge)"}"><span class="tab"></span>
     <span><span class="m">${g.matchup}${utag}</span><br><span class="t">${kick(g.start)}${sim}</span>${more}</span>
-    <span class="sides">${btn(g.sides[0])}${btn(g.sides[1])}</span>${lines}${ladderBox}</li>`;
+    <span class="sides">${btn(g.sides[0])}${btn(g.sides[1])}</span>${lines}${ladderBox}${
+      hasPP ? `<span class="pprops" id="gp${i}" hidden></span>` : ""}</li>`;
 }).join("");
+function propsPanel(mu){
+  const on = k => custom.has(k) ? " on" : "";
+  const chip = (k, label, odds, p) => `<button class="side mini${on(k)}" data-k="${k}">${label}<small>${fd(odds)} · ${pct(p)}</small></button>`;
+  let team = null, html = "";
+  for (const pl of (D.menu[mu] || [])){
+    if (pl.t !== team){ team = pl.t; html += `<span class="team">${team || "Defenses &amp; team not confirmed"}</span>`; }
+    const chips = [];
+    if (pl.td){ const [p, odds, mkt, sel] = pl.td;
+      chips.push(chip(mkt + ":" + sel, "TD", odds, p)); }
+    pl.pr.forEach(([type, line, mkt, op, oo, os, up, uo, us]) => {
+      chips.push(chip(mkt + ":" + os, `O ${line} ${shortType(type)}`, oo, op));
+      chips.push(chip(mkt + ":" + us, `U ${line}`, uo, up));
+    });
+    html += `<div class="pp"><span class="nm">${esc(pl.n)}${pl.pos ? `<small>${pl.pos}</small>` : ""}</span>${dvpTag(pl.n)}<div class="chips">${chips.join("")}</div></div>`;
+  }
+  const bt = D.dvp_bt || {};
+  html += `<p class="pnote">Defense ranks: 1st-most = softest matchup. Green = top 8 soft, red = bottom 8. Treat them as context: over 2022–25 a defense's first-two-weeks rank vs a position matched the rest of its season only weakly (TEs ${(bt.wk2||{}).TE}, WRs ${(bt.wk2||{}).WR}, where 1 = perfect), and FanDuel's line already knows the matchup. TD prices carry the book's vig.</p>`;
+  return html;
+}
+
 document.querySelectorAll("#slate .more").forEach(b =>
   b.onclick = () => {
     const x = $(b.dataset.x);
+    if (b.dataset.mu && !x.innerHTML) x.innerHTML = propsPanel(b.dataset.mu);
     x.hidden = !x.hidden;
     b.classList.toggle("open", !x.hidden);
   });
@@ -1212,7 +1291,7 @@ $("propboard").innerHTML = D.props.map(c => {
       ${s === "over" ? "O" : "U"} ${c.line} ${fd(c[s].odds)}<small>${pct(c[s].p)}</small></button>` : "";
   return `<li style="--tc:var(--go)"><span class="tab"></span>
     <span><span class="m">${c.player}${tag}</span><br>
-      <span class="t">${c.type} · ${c.matchup}</span></span>
+      <span class="t">${c.type} · ${c.matchup}</span>${dvpTag(c.player)}</span>
     <span class="sides">${btn("over")}${btn("under")}</span></li>`;
 }).join("");
 
@@ -1262,7 +1341,7 @@ if ((D.tds || []).length){
       : c.inj ? `<span class="itag out">${c.inj === "Out" ? "OUT" : "DTFL"}</span>` : "";
     return `<li style="--tc:var(--money)"><span class="tab"></span>
       <span><span class="m">${c.player}${tag}</span><br>
-        <span class="t">anytime TD · ${c.matchup}</span></span>
+        <span class="t">anytime TD · ${c.matchup}</span>${dvpTag(c.player)}</span>
       <span class="sides"><button class="side" data-k="${c.market}:${c.sel}">
         TD ${fd(c.odds)}<small>${pct(c.p)}</small></button></span></li>`;
   }).join("");
@@ -1290,8 +1369,10 @@ trimList("slate", 8, "games");
 trimList("propboard", 8, "props");
 trimList("tdboard", 6, "TD scorers");
 
-document.querySelectorAll("button.side").forEach(b =>
-  b.onclick = () => toggleLeg(b.dataset.k));
+document.addEventListener("click", e => {
+  const b = e.target.closest("button.side");
+  if (b && b.dataset.k) toggleLeg(b.dataset.k);
+});
 
 // ------------------------------------------------------ ticket tracker --
 let CUR = {legs: [], combined: 1, fdDec: 1, stake: 0};

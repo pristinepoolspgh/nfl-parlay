@@ -424,11 +424,13 @@ def build_snapshot():
         live[mu].sort(key=lambda b: korder[b["kind"]])
 
     cands, seen, props, alts, tds = [], set(), [], {}, []
+    all_tds = {}
     for eid, e in events.items():
         mu = e["matchup"]
         cands.extend(np.fetch_fd_props(eid, mu))
         try:
-            tds.extend(fetch_tds(eid, mu))
+            all_tds[mu] = fetch_tds(eid, mu, top=999)
+            tds.extend(all_tds[mu][:5])
         except Exception:
             pass
         rungs = [a for a in np.fetch_fd_alts(eid, mu) if a["p"] >= 0.02]
@@ -737,11 +739,58 @@ def build_snapshot():
     upsets.sort(key=lambda u: u["p"] - u["sp"])
     log_upsets(upsets, week)
 
+    # Every player's props and TD price per game, for building your own
+    # ticket — tagged with team, position, and what the opposing defense
+    # allows to that position (context only: see board/dvp.py).
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import dvp as dvpmod
+    season = datetime.utcnow().year
+    roster = {}
+    dv = {}
+    for yr in (season - 1, season):
+        rows = dvpmod.load_rows(yr)
+        for r in rows:
+            roster[_norm_name(r["player_display_name"])] = (
+                dvpmod.ALIAS.get(r["team"], r["team"]), r["position"])
+        if rows:
+            t = dvpmod.allowed(rows)
+            dv[str(yr)] = {d: {p: [v["rank"], v["pts"], v["g"]]
+                               for p, v in bypos.items()}
+                           for d, bypos in t.items()}
+    menu = {}
+    for g in games:
+        mu = g["matchup"]
+        players = {}
+        def pl(name):
+            if name not in players:
+                team, pos = roster.get(_norm_name(name), (None, None))
+                if team not in mu.split(" @ "):
+                    team = None
+                players[name] = {"n": name, "t": team, "pos": pos,
+                                 "pr": [], "td": None}
+            return players[name]
+        for c in cands:
+            if c["matchup"] != mu:
+                continue
+            pl(c["player"])["pr"].append(
+                [c["type"], c["line"], c["market"],
+                 c["over"]["p"], c["over"]["odds"], c["over"]["sel"],
+                 c["under"]["p"], c["under"]["odds"], c["under"]["sel"]])
+        for r in all_tds.get(mu, []):
+            if r["p"] >= 0.03:
+                pl(r["player"])["td"] = [r["p"], r["odds"], r["market"],
+                                         r["sel"]]
+        order = {"QB": 0, "RB": 1, "WR": 2, "TE": 3}
+        menu[mu] = sorted(players.values(), key=lambda x: (
+            x["t"] or "~", order.get(x["pos"], 4),
+            -((x["td"] or [0])[0])))
+
     stamp = (datetime.now(np._EASTERN) if np._EASTERN
              else datetime.utcnow()).strftime("%b %d, %Y %I:%M %p ET")
     return {"generated": stamp, "week": week, "games": games,
             "props": props[:24], "tds": tds, "alts": alts,
             "simbets": simbets, "upsets": upsets, "upset_bt": UPSET_BT,
+            "menu": menu, "dvp": dv, "dvp_bt": DVP_BT,
             "scores": scores, "live": live}
 
 
@@ -749,6 +798,11 @@ def build_snapshot():
 # docs/backtests.md): sims ≥50% on the dog and ≥10 pts over the de-vigged
 # close, 2015–2026, weeks 2+. The dogs won as often as the price said.
 UPSET_MIN, UPSET_GAP = 0.50, 0.10
+# How well a defense's early rank vs a position predicts the rest of its
+# season (Spearman, 2022-25, `python3 board/dvp.py --stability`).
+DVP_BT = {"wk2": {"QB": 0.26, "RB": 0.12, "WR": 0.08, "TE": 0.23},
+          "wk8": {"QB": 0.30, "RB": 0.27, "WR": 0.14, "TE": 0.18},
+          "lastyr": {"QB": 0.09, "RB": 0.33, "WR": -0.03, "TE": 0.19}}
 UPSET_BT = {"n": 249, "won": 0.402, "implied": 0.403, "roi": -0.021}
 
 

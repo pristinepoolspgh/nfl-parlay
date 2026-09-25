@@ -150,3 +150,26 @@ excluding gaps an injured usual-starter QB explains). Calls are logged
 on first sighting to memory/upsets.jsonl and graded by learn.py
 (`upset_calls` in insights), so the live record accumulates next to
 the backtest one.
+
+## 2026-09-25 (seventh pass): is defense-vs-position signal or noise?
+
+A friend asked for defense-vs-position (DvP) data. board/dvp.py builds
+it from nflverse weekly player stats (PPR points, receptions, yards,
+TDs allowed per game to QB/RB/WR/TE; rank 1 = allows the most). Before
+showing it, `--stability` measured how well an early-season rank
+predicts the same defense's rest of season (Spearman rank correlation,
+1.0 = perfect, 0 = noise):
+
+| window | QB | RB | WR | TE |
+|---|---|---|---|---|
+| weeks 1-2 (avg 2022-25) | .26 | .12 | .08 | .23 |
+| weeks 1-8 (avg 2022-25) | .30 | .27 | .14 | .18 |
+| last season (avg 2023-25) | .09 | .33 | −.03 | .19 |
+
+DvP carries a little signal for QBs, TEs, and RBs and almost none for
+WRs, and none of this is tested against prop prices (no historical prop
+lines here). **Shipped as context only, not a model input:** each player
+row shows this year's and last year's rank with games played, and the
+props panel prints these correlations. Validating it against the
+market needs archived prop lines, which the board has only just started
+seeing.
