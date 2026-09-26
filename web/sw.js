@@ -17,3 +17,29 @@ self.addEventListener("fetch", e => {
       .then(m => m || caches.match("/")))
   );
 });
+
+// Alerts from the board's push service (supabase/functions/parlay-push).
+self.addEventListener("push", e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; }
+  catch (_) { d = { body: e.data ? e.data.text() : "" }; }
+  e.waitUntil(self.registration.showNotification(d.title || "Parlay Board", {
+    body: d.body || "",
+    tag: d.tag || "pb",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    data: { url: d.url || "/" },
+  }));
+});
+
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || "/";
+  e.waitUntil(clients.matchAll({ type: "window", includeUncontrolled: true })
+    .then(ws => {
+      for (const w of ws) {
+        if ("focus" in w) return w.focus().then(f => f.navigate ? f.navigate(url) : f);
+      }
+      return clients.openWindow(url);
+    }));
+});

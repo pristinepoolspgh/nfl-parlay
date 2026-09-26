@@ -97,6 +97,12 @@ body{
 .install img{width:36px; height:36px; border-radius:8px; flex:0 0 auto}
 .install span{flex:1}
 .install b{color:var(--ink)}
+#alerts{flex-wrap:wrap}
+.alertbtns{display:flex; gap:6px; flex:0 0 auto}
+#alerton, #alerttest{border:0; border-radius:8px; background:var(--go); color:var(--go-ink);
+  font:600 13px/1 Barlow, sans-serif; padding:9px 12px; cursor:pointer}
+#alerttest{background:var(--inset); color:var(--go); border:1px solid var(--edge)}
+#alertoff{border:0; background:none; color:var(--muted); font:600 12px/1 Barlow, sans-serif; padding:9px 4px; cursor:pointer}
 #installgo{
   border:0; border-radius:8px; background:var(--go); color:var(--go-ink);
   font:600 13px/1 Barlow, sans-serif; padding:9px 12px; cursor:pointer;
@@ -436,6 +442,15 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
     <span id="installtxt"></span>
     <button id="installgo" type="button" hidden>Install</button>
     <button id="installx" type="button" aria-label="Dismiss">&times;</button>
+  </div>
+
+  <div class="install" id="alerts" hidden>
+    <span id="alertstxt"></span>
+    <span class="alertbtns">
+      <button id="alerton" type="button" hidden>Turn on alerts</button>
+      <button id="alerttest" type="button" hidden>Send a test</button>
+      <button id="alertoff" type="button" hidden>Turn off</button>
+    </span>
   </div>
 
   <section class="card" aria-label="Ticket builder">
@@ -1776,4 +1791,79 @@ if (MIRROR){
     addEventListener("appinstalled", hideInstall);
   }
 }
+
+// ------------------------------------------------------------ alerts --
+// Push alerts (supabase/functions/parlay-push): QBs ruled out, new sims
+// upset calls and QB docks, flipped favorites, 5+ pt moves, and the new
+// week's board. iPhone allows them only from the Home Screen app.
+const PUSH_FN = "https://phxacgxbhphnvrbcrbtr.supabase.co/functions/v1/parlay-push";
+const PUSH_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoeGFjZ3hiaHBobnZyYmNyYnRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyODYzODcsImV4cCI6MjEwNTg2MjM4N30.UnG8ZLEwcbTjZ4V2Xhjfvwv7d5A80Tzh11A1xgDjpbU";
+const pushCall = (body, method = "POST") => fetch(PUSH_FN + (method === "GET" ? "?key" : ""), {
+  method, headers: {Authorization: "Bearer " + PUSH_ANON, "Content-Type": "application/json"},
+  body: method === "GET" ? undefined : JSON.stringify(body)}).then(r => r.json());
+const keyBytes = s => { s = s.replace(/-/g, "+").replace(/_/g, "/");
+  while (s.length % 4) s += "="; return Uint8Array.from(atob(s), c => c.charCodeAt(0)); };
+
+async function alertsUI(){
+  const box = $("alerts");
+  const iOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  const show = (txt, on, test, off) => {
+    $("alertstxt").innerHTML = txt;
+    $("alerton").hidden = !on; $("alerttest").hidden = !test; $("alertoff").hidden = !off;
+    box.hidden = false;
+  };
+  if (!supported){
+    if (iOS && !standalone)
+      show(`<b>Want alerts?</b> Add Parlay Board to your Home Screen first; iPhone only sends alerts to Home Screen apps (iOS 16.4+).`);
+    return;
+  }
+  if (Notification.permission === "denied"){
+    show(`<b>Alerts are blocked</b> in your phone's settings for this app. Turn them on in Settings → Notifications to use them.`);
+    return;
+  }
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if (sub) show(`<b>Alerts are on.</b> QBs ruled out, sims' upset calls, flipped favorites, 5+ point moves, and each new week's board. Quiet 11 PM–8 AM.`, false, true, true);
+  else show(`<b>Get alerts</b> when something moves: a QB ruled out, the sims flag an upset, a favorite flips, a line moves 5+ points, or the new week's board goes up. Quiet 11 PM–8 AM.`, true, false, false);
+}
+
+$("alerton").onclick = async () => {
+  $("alerton").disabled = true;
+  try {
+    if (await Notification.requestPermission() !== "granted"){ await alertsUI(); return; }
+    const reg = await navigator.serviceWorker.ready;
+    const {publicKey} = await pushCall(null, "GET");
+    const sub = await reg.pushManager.subscribe({userVisibleOnly: true,
+      applicationServerKey: keyBytes(publicKey)});
+    const r = await pushCall({action: "subscribe", subscription: sub.toJSON()});
+    if (!r.ok) throw new Error(r.error || "subscribe failed");
+    await pushCall({action: "test", endpoint: sub.endpoint});
+  } catch(e){
+    $("alertstxt").innerHTML = `<b>Couldn't turn on alerts.</b> ${esc(e.message || e)}. Try again in a minute.`;
+    $("alerton").disabled = false;
+    return;
+  }
+  $("alerton").disabled = false;
+  alertsUI();
+};
+$("alerttest").onclick = async () => {
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if (!sub) return alertsUI();
+  const r = await pushCall({action: "test", endpoint: sub.endpoint}).catch(() => ({}));
+  $("alerttest").textContent = r.ok ? "Sent ✓" : r.error === "one test a minute" ? "Wait a minute" : "Didn't send";
+  setTimeout(() => { $("alerttest").textContent = "Send a test"; }, 4000);
+};
+$("alertoff").onclick = async () => {
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if (sub){
+    await pushCall({action: "unsubscribe", endpoint: sub.endpoint}).catch(() => {});
+    await sub.unsubscribe().catch(() => {});
+  }
+  alertsUI();
+};
+if (MIRROR) alertsUI().catch(() => {});
 </script>
