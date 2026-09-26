@@ -25,6 +25,7 @@ grades itself weekly. Nothing here is betting advice, and the board says so.
 | Full app | https://claude.ai/artifact/SuKFMDPsudMcWBdYktJ9sE | Board + tracker + crew standings + weekly read ("anyone with the link"; saving needs a Claude login) |
 | Public mirror | https://nfl-parlay-inky.vercel.app | Static copy, no login, no tracker; redeploys automatically on every push to this repo (`web/index.html`, `vercel.json`). Installable to the Home Screen (`web/manifest.webmanifest`, icons, `web/sw.js`: network-first, last board offline). On open, on return to the app, and every 5 min it re-fetches itself and, if the board changed, shows what matters (finals, starters ruled Out/Doubtful, new QB docks, new upset calls, favorites flipping, prices moving 3+ pts); Refresh keeps the user's ticket. |
 | Repo | github.com/pristinepoolspgh/nfl-parlay | Everything: code, ledgers, docs |
+| Push alerts | Supabase project `parlay-board` (`phxacgxbhphnvrbcrbtr`), edge function `parlay-push` | Stores Home Screen app subscriptions and sends alerts; see "Push alerts" below |
 
 ## Components
 
@@ -157,6 +158,34 @@ layer, and its live record is graded per version so any regression shows.
 Every cycle publishes the artifact **and** pushes `web/index.html`, which
 redeploys the mirror. Routine prompts point at `board/sim.py`'s header and
 `docs/` rather than hardcoding model claims.
+
+## Push alerts
+
+Home Screen app users (iPhone: iOS 16.4+, installed from Safari) can tap
+**Turn on alerts**. Pieces:
+
+- `supabase/functions/parlay-push/`: `webpush.ts` (VAPID + aes128gcm
+  encryption on WebCrypto, checked against the `http_ece` reference
+  decryptor), `diff.ts` (what counts as alert-worthy), `index.ts`
+  (subscribe / unsubscribe / test / check).
+- Supabase project `parlay-board` (free plan, separate from the
+  business's `pristine-tracker`): tables `push_subs`, `push_keys` (VAPID
+  pair, generated server-side on first use), `push_state` (last board
+  seen), `push_log` (every alert sent, with counts). RLS on, no
+  policies: only the function's service role can read them.
+- `pg_cron` job `parlay-push-check` posts `{"action":"check"}` every 10
+  minutes. The function fetches the public board; if its `generated`
+  stamp changed, it diffs against the last one and alerts only on:
+  a QB newly Out/Doubtful, another player newly Out/Doubtful whose TD
+  price was 30%+, a new sims QB dock, a new upset call, a flipped
+  favorite, a 5+ point moneyline move, or a new week's board. Each
+  Out/Doubtful alerts once per week. Quiet 11 PM-8 AM ET (changes wait
+  until 8 AM).
+- Dead subscriptions (404/410 from the push service, or 5 failures in a
+  row) are deleted automatically.
+
+Check it: `select * from push_log order by at desc` and
+`select count(*) from push_subs` in that project.
 
 ## Access model
 
