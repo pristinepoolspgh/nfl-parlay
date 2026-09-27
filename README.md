@@ -159,6 +159,16 @@ Every cycle publishes the artifact **and** pushes `web/index.html`, which
 redeploys the mirror. Routine prompts point at `board/sim.py`'s header and
 `docs/` rather than hardcoding model claims.
 
+## Live updates during games
+
+The Home Screen app (Vercel mirror) pulls `supabase/functions/parlay-live`
+on open, on return to the app, and every 15 minutes while it's on screen:
+ESPN scores, FanDuel in-game ML/spread/total and live anytime-TD prices,
+and current pregame moneylines for games not yet started. It updates
+those in place (tickets keep their legs, repriced) and shows "Live scores
+& prices updated HH:MM". The function is read-only and caches 60 seconds.
+Injuries, props, sims and the read still come from the scheduled rebuilds.
+
 ## Push alerts
 
 Home Screen app users (iPhone: iOS 16.4+, installed from Safari) can tap

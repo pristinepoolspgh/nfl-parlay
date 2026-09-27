@@ -202,6 +202,9 @@ button.side.mini small{font-size:9.5px}
   font:700 9.5px/1 Barlow, sans-serif; letter-spacing:.08em; text-transform:uppercase;
   color:var(--money); border:1px solid var(--money); vertical-align:2px;
 }
+#liveasof{margin:4px 0 0; font-size:12.5px; color:var(--field-head); text-shadow:var(--field-shadow)}
+#liveasof b{display:inline-block; width:8px; height:8px; border-radius:50%; background:#E5484D; margin-right:6px; vertical-align:1px; animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
 .jump{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px}
 .jump a{
   font:600 12.5px/1 Barlow, sans-serif; letter-spacing:.05em; text-transform:uppercase;
@@ -448,6 +451,7 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
     <span class="eyebrow" id="eyebrow">NFL</span>
     <h1>Parlay Board</h1>
     <p id="asof"></p>
+    <p id="liveasof" hidden></p>
     <nav class="jump" aria-label="Jump to">
       <a href="#simshead">Sims</a><a href="#uphead">Upsets</a><a href="#slatehead">Board</a><a href="#prophead">Props</a><a href="#tdhead">TDs</a>
     </nav>
@@ -1169,13 +1173,16 @@ $("asof").textContent = "FanDuel board · lines as of " + D.generated;
   $("eyebrow").textContent = (full ? full + " · " : "") + "Week " + D.week;
 }
 
-if (D.scores && D.scores.length){
+function renderScores(scores, live){
+  if (!scores || !scores.length) return;
   $("scorehead").hidden = false;
   $("scorecard").hidden = false;
   let anyLive = false;
-  $("scores").innerHTML = D.scores.map(s => {
+  const ordered = [...scores].sort((x, y) => (x.final ? 1 : 0) - (y.final ? 1 : 0));
+  $("scores").innerHTML = ordered.map(s => {
+    const mu = s.matchup.replace(" VS ", " @ ");
     const cls = s.final ? "m fin" : "m";
-    const bets = (!s.final && D.live && D.live[s.matchup]) || [];
+    const bets = (!s.final && live && (live[mu] || live[s.matchup])) || [];
     let betsHtml = "";
     if (bets.length){
       anyLive = true;
@@ -1183,8 +1190,9 @@ if (D.scores && D.scores.length){
         const k = b.market + ":" + b.sel;
         ALL_LEGS[k] = {desc: b.desc, team: b.desc.split(" ")[0], p: b.p,
                        odds: b.odds, market: b.market, sel: b.sel,
-                       sub: s.matchup + " · LIVE " + s.detail};
-        return `<button class="side" data-k="${k}">${b.desc} ${fd(b.odds)}<small>${pct(b.p)}</small></button>`;
+                       sub: mu + " · LIVE " + s.detail};
+        if (custom.has(k)) custom.set(k, ALL_LEGS[k]);
+        return `<button class="side${custom.has(k) ? " on" : ""}" data-k="${k}">${b.desc} ${fd(b.odds)}<small>${pct(b.p)}</small></button>`;
       }).join("") + `</div>`;
     }
     return `<li><span class="tab"></span>
@@ -1193,6 +1201,7 @@ if (D.scores && D.scores.length){
   }).join("");
   $("livenote").hidden = !anyLive;
 }
+renderScores(D.scores, D.live);
 
 function wxLine(g){
   const w = g.wx;
@@ -1927,4 +1936,56 @@ $("alertoff").onclick = async () => {
   alertsUI();
 };
 if (MIRROR) alertsUI().catch(() => {});
+
+// ---------------------------------------------------------- live feed --
+// During games the app pulls scores, in-game prices and current pregame
+// moneylines from supabase/functions/parlay-live: on open, on return to
+// the app, and every 15 minutes while it's on screen. The full board
+// (injuries, props, sims) still comes from the scheduled rebuilds.
+const LIVE_FN = "https://phxacgxbhphnvrbcrbtr.supabase.co/functions/v1/parlay-live";
+const LIVE_EVERY = 15 * 60 * 1000;
+let liveAt = 0;
+
+function applyLive(d){
+  renderScores(d.scores, d.live);
+  for (const g of D.games){
+    const pre = (d.pregame || {})[g.matchup];
+    if (!pre || pre.market !== g.market) continue;
+    for (const s of g.sides){
+      const n = pre.sides.find(x => x.sel === s.sel);
+      if (!n) continue;
+      s.odds = n.odds; s.p = n.p;
+      const k = g.market + ":" + s.sel;
+      ALL_LEGS[k] = mlLeg(g, s);
+      if (custom.has(k)) custom.set(k, ALL_LEGS[k]);
+      document.querySelectorAll(`button.side[data-k="${k}"]`).forEach(b => {
+        b.innerHTML = `${s.team} ${fd(s.odds)}<small>${pct(s.p)}</small>`;
+      });
+    }
+    g.sides.sort((a, b) => b.p - a.p);
+  }
+  render();
+  const t = new Date(d.asof).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"});
+  const nLive = (d.scores || []).filter(s => !s.final).length;
+  $("liveasof").innerHTML = `${nLive ? "<b></b>" : ""}Live scores &amp; prices updated ${t}` +
+    (nLive ? ` · ${nLive} game${nLive > 1 ? "s" : ""} in progress · next update in 15 min` : "");
+  $("liveasof").hidden = false;
+}
+
+async function pullLive(minGap){
+  if (!MIRROR || !navigator.onLine || document.hidden) return;
+  if (Date.now() - liveAt < minGap) return;
+  liveAt = Date.now();
+  try {
+    const r = await fetch(LIVE_FN, {cache: "no-store",
+      headers: {Authorization: "Bearer " + PUSH_ANON}});
+    const d = await r.json();
+    if (!d.error) applyLive(d);
+  } catch(e){ liveAt = 0; }
+}
+if (MIRROR){
+  setTimeout(() => pullLive(0), 800);
+  document.addEventListener("visibilitychange", () => pullLive(2 * 60 * 1000));
+  setInterval(() => pullLive(LIVE_EVERY - 30 * 1000), 60 * 1000);
+}
 </script>
