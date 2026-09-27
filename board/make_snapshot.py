@@ -579,6 +579,9 @@ def build_snapshot():
                            else round(1.0 - pred["p_home"], 4))
                 g["proj"] = {"h": round(pred["proj"]["home"]),
                              "a": round(pred["proj"]["away"])}
+                g["simx"] = {"m": round(pred["mu_margin"], 1),
+                             "t": round(pred["mu_total"], 1),
+                             "ph": round(pred["p_home"], 4)}
                 # Sim-price every alt rung of this game so the ticket
                 # builders can hear the model when choosing legs.
                 mu_m, mu_t = pred["mu_margin"], pred["mu_total"]

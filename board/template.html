@@ -202,6 +202,19 @@ button.side.mini small{font-size:9.5px}
   font:700 9.5px/1 Barlow, sans-serif; letter-spacing:.08em; text-transform:uppercase;
   color:var(--money); border:1px solid var(--money); vertical-align:2px;
 }
+.jump{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px}
+.jump a{
+  font:600 12.5px/1 Barlow, sans-serif; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--field-head); text-decoration:none; padding:7px 11px; border-radius:999px;
+  background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.35);
+}
+h2{scroll-margin-top:calc(12px + env(safe-area-inset-top, 0px))}
+.simrow .m small{font-weight:600; color:var(--muted); font-size:12px}
+.simrow .kv{display:block; font-size:12.5px; color:var(--ink); margin-top:3px; font-variant-numeric:tabular-nums}
+.simrow .kv span{color:var(--muted)}
+.simrow .gap{font:700 13px/1 "Barlow Condensed", sans-serif; letter-spacing:.04em; text-transform:uppercase; padding:4px 7px; border-radius:6px; border:1px solid var(--edge); color:var(--muted); white-space:nowrap}
+.simrow .gap.big{color:#D9A93C; border-color:#D9A93C}
+.simrow .tags{display:block; margin-top:3px}
 .upnote{padding:10px 14px 12px; border-top:1px solid var(--edge); color:var(--muted); font-size:12.5px; line-height:1.45}
 .upnote button{margin-top:8px}
 .legs{list-style:none; margin:0; padding:4px 0}
@@ -435,6 +448,9 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
     <span class="eyebrow" id="eyebrow">NFL</span>
     <h1>Parlay Board</h1>
     <p id="asof"></p>
+    <nav class="jump" aria-label="Jump to">
+      <a href="#simshead">Sims</a><a href="#uphead">Upsets</a><a href="#slatehead">Board</a><a href="#prophead">Props</a><a href="#tdhead">TDs</a>
+    </nav>
   </header>
 
   <div class="install" id="install" hidden>
@@ -523,8 +539,13 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
     the current price when it opens — check it before you fire.</div>
   </section>
 
-  <h2>The board <small>&middot; tap any price to build your own &middot; alt lines and notes open under each game</small></h2>
-  <section class="card"><ul class="rows" id="slate"></ul></section>
+  <h2 id="simshead" hidden>The sims <small>&middot; every game, the model next to the market &middot; biggest disagreements first</small></h2>
+  <section class="card" id="simscard" hidden><ul class="rows" id="simsboard"></ul>
+    <div class="upnote">How to read it: <b>sims</b> is the model's own number from
+    final scores (plus a QB-change dock from week 5 and a wind/rain trim on
+    totals); <b>mkt</b> is FanDuel's price with the vig removed. The closing
+    line has beaten the sims over 2,193 graded games, so a big gap means
+    "check the news", not "free money". Tap a price to add it to your ticket.</div></section>
 
   <h2 id="uphead" hidden>Upset watch <small>&middot; the sims pick the underdog to win outright</small></h2>
   <section class="card" id="upcard" hidden><ul class="rows" id="upboard"></ul>
@@ -533,7 +554,10 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
   <h2 id="simhead" hidden>Sims&rsquo; calls <small>&middot; where the model most disagrees with the price &middot; research, not edge: across 2,193 graded games these disagreements predicted nothing beyond the closing line &mdash; shown because they&rsquo;re graded, not because they&rsquo;re right</small></h2>
   <section class="card" id="simcard" hidden><ul class="rows" id="simboard"></ul></section>
 
-  <h2>Props <small>&middot; strongest priced sides, one per player &middot; every player&rsquo;s props are under each game</small></h2>
+  <h2 id="slatehead">The board <small>&middot; tap any price to build your own &middot; alt lines and notes open under each game</small></h2>
+  <section class="card"><ul class="rows" id="slate"></ul></section>
+
+  <h2 id="prophead">Props <small>&middot; strongest priced sides, one per player &middot; every player&rsquo;s props are under each game</small></h2>
   <section class="card"><ul class="rows" id="propboard"></ul></section>
 
   <h2 id="tdhead" hidden>TD scorers <small>&middot; anytime TD &middot; one-sided market, so odds carry the book&rsquo;s vig</small></h2>
@@ -1362,6 +1386,42 @@ if ((D.tds || []).length){
   }).join("");
 }
 
+// The sims, side by side with the market, every game.
+if (D.games.some(g => g.simx)){
+  const rows = D.games.filter(g => g.simx).map(g => {
+    const [away, home] = g.matchup.split(" @ ");
+    const fav = g.sides[0], dog = g.sides[1];
+    const L = gameLines(g);
+    const mSpread = L.fs ? `${L.fs.team} ${L.fs.ln > 0 ? "+" + L.fs.ln : "−" + Math.abs(L.fs.ln)}` : "—";
+    const mTotal = L.ov ? L.ov.ln : null;
+    const m = g.simx.m;                         // home minus away
+    const sFav = m >= 0 ? home : away, sBy = Math.abs(m);
+    const sSpread = sBy < 0.5 ? "pick'em" : `${sFav} −${sBy.toFixed(1)}`;
+    const gap = g.ep - fav.p;                    // sims minus market, on the favorite
+    const simPick = g.ep >= 0.5 ? fav.team : dog.team;
+    const simPickP = g.ep >= 0.5 ? g.ep : 1 - g.ep;
+    const tags = [];
+    if (g.upset) tags.push(`<span class="utag">sims: upset</span>`);
+    for (const [t, pts] of Object.entries((g.adj || {}).dock || {}))
+      tags.push(`<span class="utag">${t} QB dock −${pts}</span>`);
+    if ((g.adj || {}).wx) tags.push(`<span class="utag">weather trims total ${Math.abs(g.adj.wx)}</span>`);
+    if (g.explained) tags.push(`<span class="utag" style="color:var(--muted);border-color:var(--edge)">gap explained: QB out</span>`);
+    const gapTxt = Math.abs(gap) < 0.03 ? "agree"
+      : `${gap > 0 ? "likes" : "fades"} ${fav.team} by ${Math.round(Math.abs(gap) * 100)}`;
+    const pickBtn = t => { const s = g.sides.find(x => x.team === t);
+      return `<button class="side" data-k="${g.market}:${s.sel}">${t} ${fd(s.odds)}<small>${pct(s.p)}</small></button>`; };
+    return {gap: Math.abs(gap), html: `<li class="simrow" style="--tc:${TEAMCOLOR[simPick] || "var(--edge)"}"><span class="tab"></span>
+      <span><span class="m">${g.matchup} <small>${kick(g.start)}</small></span>
+        <span class="kv"><span>sims</span> ${g.proj.h >= g.proj.a ? `${home} ${g.proj.h}, ${away} ${g.proj.a}` : `${away} ${g.proj.a}, ${home} ${g.proj.h}`} · ${simPick} ${Math.round(simPickP * 100)}% · ${sSpread} · total ${g.simx.t.toFixed(1)}</span>
+        <span class="kv"><span>mkt&nbsp;</span> ${fav.team} ${Math.round(fav.p * 100)}% · ${mSpread} · total ${mTotal ?? "—"}</span>
+        ${tags.length ? `<span class="tags">${tags.join(" ")}</span>` : ""}</span>
+      <span class="sides" style="flex-direction:column;align-items:flex-end;gap:6px"><span class="gap${Math.abs(gap) >= 0.1 ? " big" : ""}">${gapTxt}</span>${pickBtn(simPick)}</span></li>`};
+  }).sort((a, b) => b.gap - a.gap);
+  $("simsboard").innerHTML = rows.map(r => r.html).join("");
+  $("simshead").hidden = false;
+  $("simscard").hidden = false;
+}
+
 // Keep the page short: long sections open folded to their top rows.
 function trimList(ulId, keep, label){
   const ul = $(ulId);
@@ -1381,6 +1441,7 @@ function trimList(ulId, keep, label){
   ul.after(btn);
 }
 trimList("slate", 8, "games");
+trimList("simsboard", 6, "games");
 trimList("propboard", 8, "props");
 trimList("tdboard", 6, "TD scorers");
 
