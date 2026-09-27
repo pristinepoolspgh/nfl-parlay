@@ -6,7 +6,7 @@
 {"date": "2026-10-04", "matchup": "LAC @ SEA", "week": 2, "mu_margin": 12.07, "mu_total": 42.84, "p_home": 0.8197}
 {"date": "2026-09-27", "matchup": "SEA @ WSH", "week": 2, "mu_margin": -9.69, "mu_total": 45.59, "p_home": 0.2315}
 {"date": "2026-09-27", "matchup": "NYJ @ DET", "week": 2, "mu_margin": 6.27, "mu_total": 48.63, "p_home": 0.6826}
-{"date": "2026-09-24", "matchup": "ATL @ GB", "week": 2, "mu_margin": 4.44, "mu_total": 44.55, "p_home": 0.6316}
+{"date": "2026-09-24", "matchup": "ATL @ GB", "week": 2, "mu_margin": 4.44, "mu_total": 44.55, "p_home": 0.6316, "as_": 35, "hs": 14}
 {"date": "2026-10-04", "matchup": "NE @ BUF", "week": 2, "mu_margin": 1.63, "mu_total": 46.83, "p_home": 0.5492}
 {"date": "2026-10-04", "matchup": "KC @ LV", "week": 2, "mu_margin": -0.84, "mu_total": 43.04, "p_home": 0.4745}
 {"date": "2026-10-04", "matchup": "IND @ WSH", "week": 2, "mu_margin": 0.52, "mu_total": 49.62, "p_home": 0.5157}

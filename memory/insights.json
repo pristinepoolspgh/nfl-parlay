@@ -1,9 +1,9 @@
 {
- "updated": "2026-09-24T23:35Z",
- "games": 15,
- "predicted": 0.6882,
- "actual": 0.6667,
- "summary": "15 favorites graded: market said 68.8%, they actually won 66.7%.",
+ "updated": "2026-09-27T15:15Z",
+ "games": 16,
+ "predicted": 0.6913,
+ "actual": 0.625,
+ "summary": "16 favorites graded: market said 69.1%, they actually won 62.5%.",
  "buckets": [
   {
    "range": "50-60%",
@@ -19,9 +19,9 @@
   },
   {
    "range": "70-80%",
-   "n": 6,
-   "predicted": 0.7473,
-   "actual": 0.5
+   "n": 7,
+   "predicted": 0.7459,
+   "actual": 0.4286
   },
   {
    "range": "80-90%",
@@ -53,6 +53,13 @@
   },
   {
    "week": 2,
+   "matchup": "ATL @ GB",
+   "fav": "GB",
+   "p_fav": 0.73692,
+   "score": "ATL 35 - GB 14"
+  },
+  {
+   "week": 2,
    "matchup": "LV @ LAC",
    "fav": "LAC",
    "p_fav": 0.72575,
@@ -73,7 +80,13 @@
    "score": "CIN 20 - HOU 6"
   }
  ],
- "sim": null,
+ "sim": {
+  "n": 1,
+  "winner_acc": 0.0,
+  "margin_mae": 25.44,
+  "total_mae": 4.45,
+  "brier": 0.3989
+ },
  "upset_calls": {
   "calls": 1,
   "graded": 0,
