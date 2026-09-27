@@ -1,32 +1,32 @@
 {
- "updated": "2026-09-27T19:10Z",
- "games": 16,
- "predicted": 0.6913,
- "actual": 0.625,
- "summary": "16 favorites graded: market said 69.1%, they actually won 62.5%.",
+ "updated": "2026-09-27T21:10Z",
+ "games": 25,
+ "predicted": 0.6814,
+ "actual": 0.6,
+ "summary": "25 favorites graded: market said 68.1%, they actually won 60.0%.",
  "buckets": [
   {
    "range": "50-60%",
-   "n": 3,
-   "predicted": 0.5712,
-   "actual": 0.6667
+   "n": 6,
+   "predicted": 0.5606,
+   "actual": 0.5
   },
   {
    "range": "60-70%",
-   "n": 5,
-   "predicted": 0.6504,
-   "actual": 0.8
+   "n": 7,
+   "predicted": 0.6485,
+   "actual": 0.7143
   },
   {
    "range": "70-80%",
-   "n": 7,
-   "predicted": 0.7459,
-   "actual": 0.4286
+   "n": 10,
+   "predicted": 0.7431,
+   "actual": 0.5
   },
   {
    "range": "80-90%",
-   "n": 1,
-   "predicted": 0.8736,
+   "n": 2,
+   "predicted": 0.8509,
    "actual": 1.0
   },
   {
@@ -67,6 +67,13 @@
   },
   {
    "week": 2,
+   "matchup": "SEA @ WSH",
+   "fav": "SEA",
+   "p_fav": 0.70016,
+   "score": "SEA 31 - WSH 33"
+  },
+  {
+   "week": 2,
    "matchup": "MIN @ CHI",
    "fav": "CHI",
    "p_fav": 0.661,
@@ -74,32 +81,53 @@
   },
   {
    "week": 2,
+   "matchup": "CIN @ PIT",
+   "fav": "CIN",
+   "p_fav": 0.60971,
+   "score": "CIN 27 - PIT 30"
+  },
+  {
+   "week": 2,
    "matchup": "CIN @ HOU",
    "fav": "HOU",
    "p_fav": 0.58,
    "score": "CIN 20 - HOU 6"
+  },
+  {
+   "week": 2,
+   "matchup": "CAR @ CLE",
+   "fav": "CAR",
+   "p_fav": 0.57423,
+   "score": "CAR 18 - CLE 21"
+  },
+  {
+   "week": 2,
+   "matchup": "HOU @ IND",
+   "fav": "HOU",
+   "p_fav": 0.53279,
+   "score": "HOU 17 - IND 19"
   }
  ],
  "sim": {
-  "n": 1,
-  "winner_acc": 0.0,
-  "margin_mae": 25.44,
-  "total_mae": 4.45,
-  "brier": 0.3989
+  "n": 10,
+  "winner_acc": 0.7,
+  "margin_mae": 8.79,
+  "total_mae": 10.41,
+  "brier": 0.2456
  },
  "upset_calls": {
   "calls": 1,
-  "graded": 0,
-  "won": 0,
-  "implied": null,
-  "net_per_100": 0,
+  "graded": 1,
+  "won": 1,
+  "implied": 0.3699,
+  "net_per_100": 160.0,
   "recent": [
    {
     "week": 3,
     "matchup": "CIN @ PIT",
     "dog": "PIT",
     "odds": 160.0,
-    "won": null
+    "won": true
    }
   ]
  },

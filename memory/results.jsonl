@@ -14,3 +14,12 @@
 {"date": "2026-09-20", "week": 2, "matchup": "SEA @ ARI", "fav": "SEA", "p_fav": 0.65153, "odds": -210.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "SEA 31 - ARI 7"}
 {"date": "2026-09-21", "week": 2, "matchup": "NYG @ LAR", "fav": "LAR", "p_fav": 0.72575, "odds": -310.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "NYG 6 - LAR 28"}
 {"date": "2026-09-24", "week": 2, "matchup": "ATL @ GB", "fav": "GB", "p_fav": 0.73692, "odds": -330.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "ATL 35 - GB 14"}
+{"date": "2026-09-27", "week": 2, "matchup": "KC @ MIA", "fav": "KC", "p_fav": 0.82824, "odds": -620.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "KC 24 - MIA 10"}
+{"date": "2026-09-27", "week": 2, "matchup": "NYJ @ DET", "fav": "DET", "p_fav": 0.75667, "odds": -370.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "NYJ 24 - DET 31"}
+{"date": "2026-09-27", "week": 2, "matchup": "LAC @ BUF", "fav": "BUF", "p_fav": 0.75322, "odds": -360.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "LAC 16 - BUF 24"}
+{"date": "2026-09-27", "week": 2, "matchup": "SEA @ WSH", "fav": "SEA", "p_fav": 0.70016, "odds": -270.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "SEA 31 - WSH 33"}
+{"date": "2026-09-27", "week": 2, "matchup": "TEN @ NYG", "fav": "NYG", "p_fav": 0.67779, "odds": -240.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "TEN 7 - NYG 12"}
+{"date": "2026-09-27", "week": 2, "matchup": "CIN @ PIT", "fav": "CIN", "p_fav": 0.60971, "odds": -174.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "CIN 27 - PIT 30"}
+{"date": "2026-09-27", "week": 2, "matchup": "CAR @ CLE", "fav": "CAR", "p_fav": 0.57423, "odds": -148.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "CAR 18 - CLE 21"}
+{"date": "2026-09-27", "week": 2, "matchup": "NE @ JAX", "fav": "JAX", "p_fav": 0.54274, "odds": -130.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "NE 6 - JAX 35"}
+{"date": "2026-09-27", "week": 2, "matchup": "HOU @ IND", "fav": "HOU", "p_fav": 0.53279, "odds": -124.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "HOU 17 - IND 19"}
