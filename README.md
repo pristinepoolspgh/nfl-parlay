@@ -176,7 +176,7 @@ Home Screen app users (iPhone: iOS 16.4+, installed from Safari) can tap
 - `pg_cron` job `parlay-push-check` posts `{"action":"check"}` every 10
   minutes. The function fetches the public board; if its `generated`
   stamp changed, it diffs against the last one and alerts only on:
-  a QB newly Out/Doubtful, another player newly Out/Doubtful whose TD
+  a starting QB (one FanDuel prices passing props for) newly Out/Doubtful, another player newly Out/Doubtful whose TD
   price was 30%+, a new sims QB dock, a new upset call, a flipped
   favorite, a 5+ point moneyline move, or a new week's board. Each
   Out/Doubtful alerts once per week. Quiet 11 PM-8 AM ET (changes wait

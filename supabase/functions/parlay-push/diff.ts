@@ -3,7 +3,7 @@ export type G = { mu: string; fav: string; dog: string; p: number; odds: number;
            dogOdds: number; inj: string[][]; upset: boolean;
            dock: Record<string, number> };
 export type Snap = { week: number; generated: string; games: G[];
-              td: Record<string, number>; outs: string[] };
+              td: Record<string, number>; outs: string[]; passers: string[] };
 
 export function extract(D: any, prev: Snap | null): Snap {
   const games: G[] = D.games.map((g: any) => ({
@@ -14,12 +14,18 @@ export function extract(D: any, prev: Snap | null): Snap {
     upset: !!g.upset, dock: (g.adj || {}).dock || {},
   }));
   const td: Record<string, number> = {};
+  // A QB FanDuel prices passing props for is a starter; backups are not.
+  const passers = new Set(prev && prev.week === D.week ? prev.passers || [] : []);
   for (const pls of Object.values(D.menu || {}) as any[])
-    for (const pl of pls) if (pl.td) td[pl.n] = pl.td[0];
+    for (const pl of pls) {
+      if (pl.td) td[pl.n] = pl.td[0];
+      if ((pl.pr || []).some((r: any[]) => String(r[0]).startsWith("Passing"))) passers.add(pl.n);
+    }
   const outs = new Set(prev && prev.week === D.week ? prev.outs : []);
   for (const g of games) for (const r of g.inj)
     if (r[3] === "Out" || r[3] === "Doubtful") outs.add(r[0] + "|" + r[3]);
-  return { week: D.week, generated: D.generated, games, td, outs: [...outs] };
+  return { week: D.week, generated: D.generated, games, td, outs: [...outs],
+           passers: [...passers] };
 }
 
 const fd = (o: number) => (o < 0 ? "−" + Math.abs(o) : "+" + o);
@@ -32,6 +38,7 @@ export function diff(o: Snap | null, n: Snap): string[] {
             ...(ups.length ? [`Sims' upset calls: ${ups.join(", ")}`] : [])];
   }
   const seen = new Set(o.outs);
+  const starters = new Set([...(o.passers || []), ...(n.passers || [])]);
   const og = new Map(o.games.map((g) => [g.mu, g]));
   const out: [number, string][] = [];
   for (const g of n.games) {
@@ -40,7 +47,7 @@ export function diff(o: Snap | null, n: Snap): string[] {
     for (const [name, team, pos, status] of g.inj) {
       if ((status !== "Out" && status !== "Doubtful") || seen.has(name + "|" + status)) continue;
       const tdp = n.td[name] ?? o.td[name] ?? 0;
-      if (pos === "QB") out.push([0, `${name} ${status.toUpperCase()} (${team} QB)`]);
+      if (pos === "QB" && starters.has(name)) out.push([0, `${name} ${status.toUpperCase()} (${team} QB)`]);
       else if (tdp >= 0.3) out.push([1, `${name} ${status.toUpperCase()} (${team} ${pos})`]);
     }
     for (const t of Object.keys(g.dock))
