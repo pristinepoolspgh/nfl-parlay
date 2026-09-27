@@ -340,6 +340,11 @@ def build_snapshot():
     # everything rather than a blank board.
     week_mus = {ev.get("shortName", "").replace(" VS ", " @ ")
                 for ev in espn.get("events", [])}
+    # Neutral-site games (international, etc.): no home-field in the sims.
+    neutral_mus = {ev.get("shortName", "").replace(" VS ", " @ ")
+                   for ev in espn.get("events", [])
+                   if " VS " in ev.get("shortName", "")
+                   or any(c.get("neutralSite") for c in ev.get("competitions", []))}
     in_week = {eid: e for eid, e in events.items()
                if e["matchup"] in week_mus}
     if in_week:
@@ -568,8 +573,11 @@ def build_snapshot():
                 mu = g["matchup"]
                 dh, da, ts = (qb_dock(home, mu), qb_dock(away, mu),
                               wx_shift(g))
-                pred = model.predict(home, away, dock_home=dh,
-                                     dock_away=da, total_shift=ts)
+                pred = model.predict(home, away, neutral=mu in neutral_mus,
+                                     dock_home=dh, dock_away=da,
+                                     total_shift=ts)
+                if mu in neutral_mus:
+                    g["neutral"] = True
                 if dh or da or ts:
                     g["adj"] = {"dock": {t: p for t, p in
                                          ((home, dh), (away, da)) if p},
