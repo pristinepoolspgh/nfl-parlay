@@ -23,3 +23,8 @@
 {"date": "2026-09-27", "week": 2, "matchup": "CAR @ CLE", "fav": "CAR", "p_fav": 0.57423, "odds": -148.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "CAR 18 - CLE 21"}
 {"date": "2026-09-27", "week": 2, "matchup": "NE @ JAX", "fav": "JAX", "p_fav": 0.54274, "odds": -130.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "NE 6 - JAX 35"}
 {"date": "2026-09-27", "week": 2, "matchup": "HOU @ IND", "fav": "HOU", "p_fav": 0.53279, "odds": -124.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "HOU 17 - IND 19"}
+{"date": "2026-09-27", "week": 2, "matchup": "ARI @ SF", "fav": "SF", "p_fav": 0.80165, "odds": -500.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "ARI 30 - SF 36"}
+{"date": "2026-09-27", "week": 2, "matchup": "LV @ NO", "fav": "NO", "p_fav": 0.59653, "odds": -164.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "LV 35 - NO 27"}
+{"date": "2026-09-27", "week": 2, "matchup": "BAL @ DAL", "fav": "BAL", "p_fav": 0.57899, "odds": -152.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "BAL 34 - DAL 31"}
+{"date": "2026-09-27", "week": 2, "matchup": "MIN @ TB", "fav": "MIN", "p_fav": 0.54673, "odds": -132.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "MIN 23 - TB 16"}
+{"date": "2026-09-27", "week": 2, "matchup": "LAR @ DEN", "fav": "LAR", "p_fav": 0.56349, "odds": -142.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "LAR 26 - DEN 30"}

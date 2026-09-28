@@ -1,14 +1,14 @@
 {
- "updated": "2026-09-27T23:11Z",
- "games": 25,
- "predicted": 0.6814,
+ "updated": "2026-09-28T23:11Z",
+ "games": 30,
+ "predicted": 0.6708,
  "actual": 0.6,
- "summary": "25 favorites graded: market said 68.1%, they actually won 60.0%.",
+ "summary": "30 favorites graded: market said 67.1%, they actually won 60.0%.",
  "buckets": [
   {
    "range": "50-60%",
-   "n": 6,
-   "predicted": 0.5606,
+   "n": 10,
+   "predicted": 0.5649,
    "actual": 0.5
   },
   {
@@ -25,8 +25,8 @@
   },
   {
    "range": "80-90%",
-   "n": 2,
-   "predicted": 0.8509,
+   "n": 3,
+   "predicted": 0.8345,
    "actual": 1.0
   },
   {
@@ -88,6 +88,13 @@
   },
   {
    "week": 2,
+   "matchup": "LV @ NO",
+   "fav": "NO",
+   "p_fav": 0.59653,
+   "score": "LV 35 - NO 27"
+  },
+  {
+   "week": 2,
    "matchup": "CIN @ HOU",
    "fav": "HOU",
    "p_fav": 0.58,
@@ -102,6 +109,13 @@
   },
   {
    "week": 2,
+   "matchup": "LAR @ DEN",
+   "fav": "LAR",
+   "p_fav": 0.56349,
+   "score": "LAR 26 - DEN 30"
+  },
+  {
+   "week": 2,
    "matchup": "HOU @ IND",
    "fav": "HOU",
    "p_fav": 0.53279,
@@ -109,11 +123,11 @@
   }
  ],
  "sim": {
-  "n": 10,
-  "winner_acc": 0.7,
-  "margin_mae": 8.79,
-  "total_mae": 10.41,
-  "brier": 0.2456
+  "n": 15,
+  "winner_acc": 0.7333,
+  "margin_mae": 7.46,
+  "total_mae": 11.62,
+  "brier": 0.2334
  },
  "upset_calls": {
   "calls": 1,
