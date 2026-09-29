@@ -1,9 +1,9 @@
 {
- "updated": "2026-09-28T23:11Z",
- "games": 30,
- "predicted": 0.6708,
- "actual": 0.6,
- "summary": "30 favorites graded: market said 67.1%, they actually won 60.0%.",
+ "updated": "2026-09-29T13:25Z",
+ "games": 31,
+ "predicted": 0.6697,
+ "actual": 0.5806,
+ "summary": "31 favorites graded: market said 67.0%, they actually won 58.1%.",
  "buckets": [
   {
    "range": "50-60%",
@@ -13,9 +13,9 @@
   },
   {
    "range": "60-70%",
-   "n": 7,
-   "predicted": 0.6485,
-   "actual": 0.7143
+   "n": 8,
+   "predicted": 0.6473,
+   "actual": 0.625
   },
   {
    "range": "70-80%",
@@ -81,6 +81,13 @@
   },
   {
    "week": 2,
+   "matchup": "PHI @ CHI",
+   "fav": "PHI",
+   "p_fav": 0.63865,
+   "score": "PHI 7 - CHI 27"
+  },
+  {
+   "week": 2,
    "matchup": "CIN @ PIT",
    "fav": "CIN",
    "p_fav": 0.60971,
@@ -113,24 +120,17 @@
    "fav": "LAR",
    "p_fav": 0.56349,
    "score": "LAR 26 - DEN 30"
-  },
-  {
-   "week": 2,
-   "matchup": "HOU @ IND",
-   "fav": "HOU",
-   "p_fav": 0.53279,
-   "score": "HOU 17 - IND 19"
   }
  ],
  "sim": {
-  "n": 15,
-  "winner_acc": 0.7333,
-  "margin_mae": 7.46,
-  "total_mae": 11.62,
-  "brier": 0.2334
+  "n": 16,
+  "winner_acc": 0.75,
+  "margin_mae": 8.1,
+  "total_mae": 11.66,
+  "brier": 0.2304
  },
  "upset_calls": {
-  "calls": 1,
+  "calls": 2,
   "graded": 1,
   "won": 1,
   "implied": 0.3699,
@@ -142,6 +142,13 @@
     "dog": "PIT",
     "odds": 160.0,
     "won": true
+   },
+   {
+    "week": 3,
+    "matchup": "JAX @ CIN",
+    "dog": "JAX",
+    "odds": 112.0,
+    "won": null
    }
   ]
  },

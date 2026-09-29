@@ -349,6 +349,10 @@ def build_snapshot():
                if e["matchup"] in week_mus}
     if in_week:
         events = in_week
+    elif events and week:
+        # ESPN still shows last week (Tuesday, before it flips): every game
+        # on FanDuel's board is next week's.
+        week += 1
 
     games = []
     for m in att["markets"].values():

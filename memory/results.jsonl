@@ -28,3 +28,4 @@
 {"date": "2026-09-27", "week": 2, "matchup": "BAL @ DAL", "fav": "BAL", "p_fav": 0.57899, "odds": -152.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "BAL 34 - DAL 31"}
 {"date": "2026-09-27", "week": 2, "matchup": "MIN @ TB", "fav": "MIN", "p_fav": 0.54673, "odds": -132.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "MIN 23 - TB 16"}
 {"date": "2026-09-27", "week": 2, "matchup": "LAR @ DEN", "fav": "LAR", "p_fav": 0.56349, "odds": -142.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "LAR 26 - DEN 30"}
+{"date": "2026-09-28", "week": 2, "matchup": "PHI @ CHI", "fav": "PHI", "p_fav": 0.63865, "odds": -198.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "PHI 7 - CHI 27"}
