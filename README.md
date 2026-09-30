@@ -42,6 +42,7 @@ board/tune.py          Parameter experiments on the same harness
 board/residual_test.py Does the model add information beyond the close?
 board/upset_test.py    Do the sims' upset calls win? (Upset watch record)
 board/dvp.py           Defense vs position tables + stability test
+board/market_model.py  v7 research harness + memory/market_model.json builder
 board/learn.py         Grades favorites, leans, sim log (per version), crew
 board/settle.py        Grades saved tickets against ESPN finals
 board/crew.py          Folds all users' tickets into the season ledgers
@@ -86,13 +87,21 @@ Full notes in `board/sim.py`'s header; evidence in `docs/backtests.md`.
   note: the backtest's "usual" QB is the modal starter over strictly
   prior games (no look-ahead); the live rule approximates it with the
   season-to-date pass-attempt leader.
-- **v6 (current)** dock **gated to week 5+** after an external review
+- **v6** dock **gated to week 5+** after an external review
   challenged the validation. No leakage found, but re-testing weeks 2–4
   (250 changed-starter games) showed every dock size grades worse there
   — early changes are mostly planned and already priced. Full tables in
   `docs/backtests.md`.
+- **v7 (current, Sep 30)** market-anchored. The center is FanDuel's
+  own main spread and total. The shape around it comes from 20 seasons
+  of real outcomes: key-number margins, and total sd = 10 + 0.08 × total
+  in place of the old 10. Both were validated out of sample on 2019-2026.
+  Nothing on top of the line tested better (Elo, weather, QB dock), so
+  v7 adds nothing on top. The Elo model lives on as the "results rating",
+  labeled research. Details: `board/market_model.py`, `docs/backtests.md`
+  eighth pass.
 
-**Upset watch:** games where the sims pick the underdog outright.
+**Upset watch:** games where the results rating (Elo) picks the underdog outright.
 Backtest (249 games): the dogs won 40.2% vs 40.3% implied, so the
 section prints that record and calls them live dogs, not locks.
 Every game has a "player props" panel: all of FanDuel's main O/U props
@@ -102,10 +111,13 @@ not a model input; see docs/backtests.md seventh pass).
 Build-my-own allows one spread, one total, one ML side per game and one
 side per prop (tapping another rung swaps it); TD scorers stack.
 
-**Honest standing:** the closing line is better than the model
-(Brier .2084 vs .2175 on the backtest). The board's "Sims' calls" section
-says so in its header. The model's value is independence + the availability
-layer, and its live record is graded per version so any regression shows.
+**Honest standing:** the closing line beat the scores-only model (Brier
+.2084 vs .2175 on the backtest), and nothing tested on top of the line
+beat the line (eighth pass). So v7 is anchored to the market by design.
+It adds validated outcome shapes for pricing alt lines and flags where
+FanDuel's own prices disagree with each other. "Sims' calls" is now that
+ladder check and is often empty. Every version is graded in
+memory/simlog.jsonl, so any regression shows.
 
 ## Money-math honesty rules (verify these first)
 

@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
-"""Game simulator: run the model on each matchup and read the
-distribution of outcomes.
+"""Game simulator.
+
+CURRENT (v7): MarketSim, below. Market-anchored: the market's own spread
+and total are the center; 20 seasons of real outcome distributions give
+the shape. Model (the Elo "results rating", v1-v6) is kept for research
+lines on the board, the Upset watch, and continued grading; the notes on
+it below describe that rating, not the live sims.
+
+Results rating (Model):
 
 Usage:  python3 board/sim.py            # project every upcoming game
 
@@ -129,6 +136,69 @@ class Model:
 
     def p_over(self, mu_total, line):
         return 1.0 - _phi((line - mu_total) / TOTAL_SD)
+
+
+MARKET_PATH = os.path.join(BASE, "memory", "market_model.json")
+
+
+class MarketSim:
+    """Sims v7: market-anchored. The center is the market's own main
+    spread and total (the rung FanDuel prices nearest a coin flip);
+    the SHAPE around it is what the sims add, both validated out of
+    sample on 2019-2026 after fitting on 2006-2018 (board/market_model.py,
+    docs/backtests.md eighth pass):
+      - margins: the real distribution of final margins for games with
+        that closing spread (key numbers 3, 7, 10 included) — beats the
+        normal curve on alt-line pricing, CI excluding zero;
+      - totals: normal with sd = a + b*total (~13.7 at 46), replacing
+        the old sd 10 that tested significantly worse.
+    Nothing is added on top of the center, because nothing tested did
+    better than the close: results ratings (Elo), weather shifts, and
+    the QB-change dock all came out no better out of sample. The Elo
+    rating lives on as the board's "results rating", labeled research."""
+    VERSION = 7
+
+    def __init__(self, path=MARKET_PATH):
+        d = json.load(open(path))
+        self.m_lo = d["m_lo"]
+        self.margin = d["margin"]
+        self.a, self.b = d["sd_a"], d["sd_b"]
+
+    def _pmf(self, spread_home):
+        k = max(-24.0, min(24.0, round(spread_home * 2) / 2))
+        return self.margin[f"{k:g}"]
+
+    def p_margin_above(self, spread_home, x):
+        """P(home margin > x); a whole-number x counts the push as half."""
+        p = 0.0
+        for i, q in enumerate(self._pmf(spread_home)):
+            k = self.m_lo + i
+            if k > x:
+                p += q
+            elif k == x:
+                p += q / 2
+        return p
+
+    def total_sd(self, total):
+        return self.a + self.b * total
+
+    def predict(self, spread_home, total):
+        """spread_home: the market's expected home margin (home -3.5
+        means +3.5 here). total: the market's main total."""
+        pmf = self._pmf(spread_home)
+        p_home = sum(q for i, q in enumerate(pmf) if self.m_lo + i > 0)
+        p_home += pmf[-self.m_lo] / 2
+        return {"mu_margin": round(spread_home, 2), "mu_total": round(total, 2),
+                "p_home": round(p_home, 4),
+                "proj": {"home": round((total + spread_home) / 2.0, 1),
+                         "away": round((total - spread_home) / 2.0, 1)}}
+
+    def p_cover(self, spread_home, team_line_vs_home):
+        """P(home covers home line L), i.e. margin > -L."""
+        return self.p_margin_above(spread_home, -team_line_vs_home)
+
+    def p_over(self, total, line):
+        return 1.0 - _phi((line - total) / self.total_sd(total))
 
 
 def main():

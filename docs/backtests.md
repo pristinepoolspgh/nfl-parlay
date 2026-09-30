@@ -173,3 +173,36 @@ row shows this year's and last year's rank with games played, and the
 props panel prints these correlations. Validating it against the
 market needs archived prop lines, which the board has only just started
 seeing.
+
+## 2026-09-30 (eighth pass): market-anchored sims (v7)
+
+Owner approved the plan: start the sims from the market's own number
+and add only what beats it. board/market_model.py, games.csv closing
+lines, fit on 2006-2018 (3,471 games), graded on 2019-2026 (2,008 games
+never seen in fitting), paired bootstrap 95% CI, adopt only when the CI
+excludes zero. Scoring = log loss on 22 alt lines per game (center
+±0.5 to ±10.5), the job the sims actually do on the board.
+
+| test | result | decision |
+|---|---|---|
+| margin shape: empirical key-number distribution vs normal sd 13.2 | −0.00261 [−0.00442, −0.00080] | **adopted** |
+| total spread: normal sd 10 (old sims) vs fitted | old sd 10 worse by +0.00512 [+0.00293, +0.00729] | **sd = 10.0 + 0.08 × total adopted** (~13.7 at 46) |
+| total shape: empirical kernel vs linear-sd normal | +0.00086 [−0.00043, +0.00218] | not adopted (no better) |
+| weather beyond the closing total (train-bin shifts) | −0.00042 [−0.00204, +0.00133] | not adopted |
+| Elo results rating blended into the closing spread (w = 0.08) | sq. error +0.146 [−0.152, +0.460] | not adopted |
+| QB-change dock beyond the closing spread (793 games, wk5+) | 1 pt −1.08 [−2.73, +0.56]; 4 pts +6.11 [−0.45, +12.62] | not adopted |
+
+What this means: the old sims' totals were overconfident. Real totals
+land about 13.5 points from the closing total on average, not 10, so
+every "Under 56.5 at 90%" the sims flagged last week was inflated by
+the narrow curve. Nothing tested adds information on top of the
+closing number itself, so v7 does not try to. It takes FanDuel's own
+spread and total as the center and prices every rung with the
+validated shapes. What v7 can still flag is internal inconsistency:
+an alt rung, or the moneyline, priced off FanDuel's own main line.
+First live read (week 4): the largest rung gap was under 5 points,
+so "Sims' calls" is empty. The results rating (Elo, v6) stays on the
+board labeled as research, still drives Upset watch with its own
+graded record, and keeps being logged for grading (rr_* fields in
+memory/simlog.jsonl). Week 4 carries both v6 and v7 rows for every
+game, so learn.py grades the two versions side by side.

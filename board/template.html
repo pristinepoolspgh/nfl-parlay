@@ -543,20 +543,25 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
     the current price when it opens — check it before you fire.</div>
   </section>
 
-  <h2 id="simshead" hidden>The sims <small>&middot; every game, the model next to the market &middot; biggest disagreements first</small></h2>
+  <h2 id="simshead" hidden>The sims <small>&middot; every game priced from the market&rsquo;s own line, with 20 seasons of real outcomes for the shape &middot; results rating alongside</small></h2>
   <section class="card" id="simscard" hidden><ul class="rows" id="simsboard"></ul>
-    <div class="upnote">How to read it: <b>sims</b> is the model's own number from
-    final scores (plus a QB-change dock from week 5 and a wind/rain trim on
-    totals); <b>mkt</b> is FanDuel's price with the vig removed. The closing
-    line has beaten the sims over 2,193 graded games, so a big gap means
-    "check the news", not "free money". Tap a price to add it to your ticket.</div></section>
+    <div class="upnote">How to read it: <b>sims</b> (v7) start from FanDuel's own
+    spread and total and add what the market's number leaves out: how
+    football scores really land around a line (the pile-ups at 3 and 7,
+    and totals scattering about 13 points, not 10). Tested on 2,008 games
+    it never saw, that prices alt lines better than the old model, and
+    nothing added on top of the line tested better than the line itself.
+    <b>rating</b> is the old scores-only power rating, kept as research: over
+    2,193 graded games its disagreements with the market predicted nothing.
+    A <b>ML vs spread</b> tag means FanDuel's moneyline is out of step with
+    its own spread by 3+ points. Tap a price to add it to your ticket.</div></section>
 
-  <h2 id="uphead" hidden>Upset watch <small>&middot; the sims pick the underdog to win outright</small></h2>
+  <h2 id="uphead" hidden>Upset watch <small>&middot; the results rating picks the underdog to win outright</small></h2>
   <section class="card" id="upcard" hidden><ul class="rows" id="upboard"></ul>
     <div class="upnote" id="upnote"></div></section>
 
-  <h2 id="simhead" hidden>Sims&rsquo; calls <small>&middot; where the model most disagrees with the price &middot; research, not edge: across 2,193 graded games these disagreements predicted nothing beyond the closing line &mdash; shown because they&rsquo;re graded, not because they&rsquo;re right</small></h2>
-  <section class="card" id="simcard" hidden><ul class="rows" id="simboard"></ul></section>
+  <h2 id="simhead">Sims&rsquo; calls <small>&middot; alt lines FanDuel prices 5+ points away from the sims&rsquo; price off its own line &middot; the ladder check</small></h2>
+  <section class="card" id="simcard"><ul class="rows" id="simboard"><li class="empty">No alt line is 5+ points off the sims' price this week: FanDuel's ladders line up with 20 seasons of real outcomes. Nothing to call.</li></ul></section>
 
   <h2 id="slatehead">The board <small>&middot; tap any price to build your own &middot; alt lines and notes open under each game</small></h2>
   <section class="card"><ul class="rows" id="slate"></ul></section>
@@ -574,10 +579,12 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
   <section class="card" id="bookcard" hidden><div class="book" id="book"></div></section>
 
   <footer>Probabilities are de-vigged market estimates (each market’s sides sum to
-  100%), not predictions. “Our numbers” are a power rating from final scores
-  (efficiency blends were backtested and cut for predicting worse), with a
-  dock when a starting QB is out and a wind press on totals — each named in
-  the notes. Subtler injuries stay judgment calls, which is why notes the
+  100%), not predictions. The sims (v7) take the market’s own spread and
+  total as the center and price every line from 20 seasons of real
+  outcomes around it; nothing added on top of the market tested better.
+  The “results rating” is a power rating from final scores, with a dock
+  when a starting QB is out and a wind press on totals, shown as research
+  and named in the notes. Subtler injuries stay judgment calls, which is why notes the
   injury report explains are dismissed in plain words. Fair figures exclude the book’s vig; FanDuel
   reprices same-game combos on the slip. Lines move; check the slip before
   betting. Nothing here is betting advice.</footer>
@@ -1349,18 +1356,18 @@ if ((D.upsets || []).length){
   $("upboard").innerHTML = D.upsets.map(u => `
     <li style="--tc:${TEAMCOLOR[u.team] || "var(--money)"}"><span class="tab"></span>
       <span><span class="m">${u.team} over ${u.over}</span><br>
-        <span class="t">${u.matchup} · ${kick(u.start)} · sims ${(u.sp*100).toFixed(0)}% vs market ${(u.p*100).toFixed(0)}%</span></span>
+        <span class="t">${u.matchup} · ${kick(u.start)} · rating ${(u.sp*100).toFixed(0)}% vs market ${(u.p*100).toFixed(0)}%</span></span>
       <span class="sides"><button class="side" data-k="${u.market}:${u.sel}">
         ${u.team} ${fd(u.odds)}<small>${pct(u.p)}</small></button></span></li>`).join("");
   const bt = D.upset_bt || {};
-  $("upnote").innerHTML = `These are the games where the sims give the
+  $("upnote").innerHTML = `These are the games where the results rating gives the
     underdog at least a coin flip and 10+ points more than the price does.
     The honest record: across ${bt.n} such games since 2015 the dogs won
     <b>${(bt.won*100).toFixed(0)}%</b> — right where the market had them
-    (${(bt.implied*100).toFixed(0)}%), not the ${UPSET_TXT} the sims claimed.
+    (${(bt.implied*100).toFixed(0)}%), not the ${UPSET_TXT} the rating claimed.
     So they're live dogs that pay like it, not locks. Every call this season
     is logged and graded.
-    <button class="sharebtn" id="upload" type="button">Put the sims’ upsets on my ticket</button>`;
+    <button class="sharebtn" id="upload" type="button">Put the rating’s upsets on my ticket</button>`;
   $("upload").onclick = () => {
     manual = true;
     D.upsets.forEach(u => { const k = u.market + ":" + u.sel;
@@ -1371,8 +1378,6 @@ if ((D.upsets || []).length){
 }
 
 if ((D.simbets || []).length){
-  $("simhead").hidden = false;
-  $("simcard").hidden = false;
   $("simboard").innerHTML = D.simbets.map(r => `
     <li style="--tc:var(--money)"><span class="tab"></span>
       <span><span class="m">${r.desc}</span><br>
@@ -1403,26 +1408,33 @@ if (D.games.some(g => g.simx)){
     const L = gameLines(g);
     const mSpread = L.fs ? `${L.fs.team} ${L.fs.ln > 0 ? "+" + L.fs.ln : "−" + Math.abs(L.fs.ln)}` : "—";
     const mTotal = L.ov ? L.ov.ln : null;
-    const m = g.simx.m;                         // home minus away
+    const m = g.simx.m;                         // home minus away (market center)
     const sFav = m >= 0 ? home : away, sBy = Math.abs(m);
-    const sSpread = sBy < 0.5 ? "pick'em" : `${sFav} −${sBy.toFixed(1)}`;
-    const gap = g.ep - fav.p;                    // sims minus market, on the favorite
+    const sSpread = sBy < 0.5 ? "pick'em" : `${sFav} −${String(sBy)}`;
     const simPick = g.ep >= 0.5 ? fav.team : dog.team;
     const simPickP = g.ep >= 0.5 ? g.ep : 1 - g.ep;
+    const rr = g.rr ?? g.ep;                     // results rating, on the favorite
+    const gap = rr - fav.p;
+    const rPick = rr >= 0.5 ? fav.team : dog.team;
+    const rPickP = rr >= 0.5 ? rr : 1 - rr;
+    const rp = g.rproj || g.proj;
+    const mlGap = fav.p - g.ep;                  // FanDuel ML vs its own spread
     const tags = [];
-    if (g.upset) tags.push(`<span class="utag">sims: upset</span>`);
+    if (Math.abs(mlGap) >= 0.03)
+      tags.push(`<span class="utag">${fav.team} ML ${Math.round(Math.abs(mlGap) * 100)} pts ${mlGap > 0 ? "above" : "below"} its spread</span>`);
+    if (g.upset) tags.push(`<span class="utag">rating: upset</span>`);
     for (const [t, pts] of Object.entries((g.adj || {}).dock || {}))
-      tags.push(`<span class="utag">${t} QB dock −${pts}</span>`);
-    if ((g.adj || {}).wx) tags.push(`<span class="utag">weather trims total ${Math.abs(g.adj.wx)}</span>`);
-    if (g.explained) tags.push(`<span class="utag" style="color:var(--muted);border-color:var(--edge)">gap explained: QB out</span>`);
-    const gapTxt = Math.abs(gap) < 0.03 ? "agree"
-      : `${gap > 0 ? "likes" : "fades"} ${fav.team} by ${Math.round(Math.abs(gap) * 100)}`;
+      tags.push(`<span class="utag" style="color:var(--muted);border-color:var(--edge)">rating docks ${t} −${pts} (QB)</span>`);
+    if (g.explained) tags.push(`<span class="utag" style="color:var(--muted);border-color:var(--edge)">rating gap explained: QB out</span>`);
+    const gapTxt = Math.abs(gap) < 0.03 ? "rating agrees"
+      : `rating ${gap > 0 ? "likes" : "fades"} ${fav.team} ${Math.round(Math.abs(gap) * 100)}`;
     const pickBtn = t => { const s = g.sides.find(x => x.team === t);
       return `<button class="side" data-k="${g.market}:${s.sel}">${t} ${fd(s.odds)}<small>${pct(s.p)}</small></button>`; };
+    const score = (pr) => pr.h >= pr.a ? `${home} ${pr.h}, ${away} ${pr.a}` : `${away} ${pr.a}, ${home} ${pr.h}`;
     return {gap: Math.abs(gap), html: `<li class="simrow" style="--tc:${TEAMCOLOR[simPick] || "var(--edge)"}"><span class="tab"></span>
       <span><span class="m">${g.matchup} <small>${kick(g.start)}</small></span>
-        <span class="kv"><span>sims</span> ${g.proj.h >= g.proj.a ? `${home} ${g.proj.h}, ${away} ${g.proj.a}` : `${away} ${g.proj.a}, ${home} ${g.proj.h}`} · ${simPick} ${Math.round(simPickP * 100)}% · ${sSpread} · total ${g.simx.t.toFixed(1)}</span>
-        <span class="kv"><span>mkt&nbsp;</span> ${fav.team} ${Math.round(fav.p * 100)}% · ${mSpread} · total ${mTotal ?? "—"}</span>
+        <span class="kv"><span>sims</span> ${score(g.proj)} · ${simPick} ${Math.round(simPickP * 100)}% · ${sSpread} · total ${g.simx.t}</span>
+        <span class="kv"><span>rating</span> ${score(rp)} · ${rPick} ${Math.round(rPickP * 100)}%</span>
         ${tags.length ? `<span class="tags">${tags.join(" ")}</span>` : ""}</span>
       <span class="sides" style="flex-direction:column;align-items:flex-end;gap:6px"><span class="gap${Math.abs(gap) >= 0.1 ? " big" : ""}">${gapTxt}</span>${pickBtn(simPick)}</span></li>`};
   }).sort((a, b) => b.gap - a.gap);

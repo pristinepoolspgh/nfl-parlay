@@ -560,7 +560,8 @@ def build_snapshot():
     if os.path.exists(elo_path):
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
         import sim as simmod
-        model = simmod.Model(elo_path)
+        model = simmod.Model(elo_path)          # results rating (Elo)
+        market = simmod.MarketSim()             # the sims (v7)
         simlog_path = os.path.join(os.path.dirname(elo_path),
                                    "simlog.jsonl")
         logged = set()
@@ -568,7 +569,7 @@ def build_snapshot():
             for line in open(simlog_path):
                 try:
                     r = json.loads(line)
-                    logged.add((r["date"], r["matchup"]))
+                    logged.add((r["date"], r["matchup"], r.get("v", 1)))
                 except Exception:
                     continue
         with open(simlog_path, "a") as slf:
@@ -577,9 +578,9 @@ def build_snapshot():
                 mu = g["matchup"]
                 dh, da, ts = (qb_dock(home, mu), qb_dock(away, mu),
                               wx_shift(g))
-                pred = model.predict(home, away, neutral=mu in neutral_mus,
-                                     dock_home=dh, dock_away=da,
-                                     total_shift=ts)
+                rr = model.predict(home, away, neutral=mu in neutral_mus,
+                                   dock_home=dh, dock_away=da,
+                                   total_shift=ts)
                 if mu in neutral_mus:
                     g["neutral"] = True
                 if dh or da or ts:
@@ -587,6 +588,11 @@ def build_snapshot():
                                          ((home, dh), (away, da)) if p},
                                 "wx": ts}
                 fav = g["sides"][0]["team"]
+                p_home_ml = next(s_["p"] for s_ in g["sides"]
+                                 if s_["team"] == home)
+                spread_home, total = market_center(
+                    alts.get(mu, []), home, away, p_home_ml, market)
+                pred = market.predict(spread_home, total)
                 g["ep"] = (pred["p_home"] if fav == home
                            else round(1.0 - pred["p_home"], 4))
                 g["proj"] = {"h": round(pred["proj"]["home"]),
@@ -594,9 +600,15 @@ def build_snapshot():
                 g["simx"] = {"m": round(pred["mu_margin"], 1),
                              "t": round(pred["mu_total"], 1),
                              "ph": round(pred["p_home"], 4)}
-                # Sim-price every alt rung of this game so the ticket
-                # builders can hear the model when choosing legs.
+                # Results rating (research line, Upset watch, notes).
+                g["rr"] = (rr["p_home"] if fav == home
+                           else round(1.0 - rr["p_home"], 4))
+                g["rproj"] = {"h": round(rr["proj"]["home"]),
+                              "a": round(rr["proj"]["away"])}
+                # Sim-price every alt rung of this game from the market's
+                # own center with the real outcome shape around it.
                 mu_m, mu_t = pred["mu_margin"], pred["mu_total"]
+                model_ = market
                 for r in alts.get(g["matchup"], []):
                     desc = r.get("desc", "")
                     m_tot = re.match(r"^(Over|Under) ([\d.]+) pts$", desc)
@@ -604,14 +616,14 @@ def build_snapshot():
                     m_ml = re.match(r"^([A-Z]{2,3}) ML$", desc)
                     sp = None
                     if m_tot:
-                        po = model.p_over(mu_t, float(m_tot.group(2)))
+                        po = model_.p_over(mu_t, float(m_tot.group(2)))
                         sp = po if m_tot.group(1) == "Over" else 1.0 - po
                     elif m_spr:
                         team, ln = m_spr.group(1), float(m_spr.group(2))
                         if team == home:
-                            sp = model.p_cover(mu_m, ln)
+                            sp = model_.p_cover(mu_m, ln)
                         elif team == away:
-                            sp = 1.0 - model.p_cover(mu_m, -ln)
+                            sp = 1.0 - model_.p_cover(mu_m, -ln)
                     elif m_ml:
                         if m_ml.group(1) == home:
                             sp = pred["p_home"]
@@ -619,14 +631,17 @@ def build_snapshot():
                             sp = 1.0 - pred["p_home"]
                     if sp is not None:
                         r["sp"] = round(sp, 4)
-                key = (g["start"][:10], g["matchup"])
+                key = (g["start"][:10], g["matchup"], simmod.MarketSim.VERSION)
                 if key not in logged:
                     slf.write(json.dumps({
                         "date": key[0], "matchup": g["matchup"],
                         "week": week, "mu_margin": pred["mu_margin"],
                         "mu_total": pred["mu_total"],
                         "p_home": pred["p_home"],
-                        "v": getattr(simmod.Model, "VERSION", 1)}) + "\n")
+                        "rr_p_home": rr["p_home"],
+                        "rr_margin": rr["mu_margin"],
+                        "rr_total": rr["mu_total"],
+                        "v": simmod.MarketSim.VERSION}) + "\n")
                     logged.add(key)
 
         # The sims' strongest calls: rungs where the model's own price
@@ -687,17 +702,17 @@ def build_snapshot():
                    and (not qb or _norm_name(r["name"]) == _norm_name(qb))
                    for r in inj_by_team.get(team, []))
     for g in games:
-        if "ep" not in g:
+        if "rr" not in g:
             continue
         fav, dog = g["sides"][0]["team"], g["sides"][1]["team"]
-        m, e = g["sides"][0]["p"], g["ep"]
+        m, e = g["sides"][0]["p"], g["rr"]
         edge = e - m
         if abs(edge) < 0.04:
             continue
         mp, epc = f"{m*100:.0f}%", f"{e*100:.0f}%"
-        proj = g.get("proj")
+        proj = g.get("rproj")
         away_t, home_t = g["matchup"].split(" @ ")
-        ps = (f"Sims see {home_t} {proj['h']}\u2013{proj['a']} {away_t}. "
+        ps = (f"Results rating: {home_t} {proj['h']}\u2013{proj['a']} {away_t}. "
               if proj else "")
         docked = set(((g.get("adj") or {}).get("dock") or {}))
         if edge < 0 and _qb_hurt(dog) and dog not in docked:
@@ -724,12 +739,12 @@ def build_snapshot():
     # Say what the model already weighed, so nobody double-counts it.
     for g in games:
         adj = g.get("adj") or {}
-        bits = [f"sims dock {t} {p:g} pts (QB change)"
+        bits = [f"results rating docks {t} {p:g} pts (QB change)"
                 for t, p in (adj.get("dock") or {}).items()]
         if adj.get("wx"):
-            bits.append(f"weather trims the total {abs(adj['wx']):g} pts")
+            bits.append(f"weather trims its total {abs(adj['wx']):g} pts")
         if bits:
-            extra = "Already in the sims: " + "; ".join(bits) + "."
+            extra = "Already in the rating: " + "; ".join(bits) + "."
             if g.get("say"):
                 g["say"] += " " + extra
             else:
@@ -740,10 +755,10 @@ def build_snapshot():
     # backtest record rides along so nobody mistakes a call for a lock.
     upsets = []
     for g in games:
-        if "ep" not in g or g.get("explained"):
+        if "rr" not in g or g.get("explained"):
             continue
         fav, dog = g["sides"]
-        p_dog_sim = round(1.0 - g["ep"], 4)
+        p_dog_sim = round(1.0 - g["rr"], 4)
         if p_dog_sim >= UPSET_MIN and p_dog_sim - dog["p"] >= UPSET_GAP:
             g["upset"] = True
             upsets.append({"desc": dog["team"] + " ML", "team": dog["team"],
@@ -819,6 +834,44 @@ DVP_BT = {"wk2": {"QB": 0.26, "RB": 0.12, "WR": 0.08, "TE": 0.23},
           "wk8": {"QB": 0.30, "RB": 0.27, "WR": 0.14, "TE": 0.18},
           "lastyr": {"QB": 0.09, "RB": 0.33, "WR": -0.03, "TE": 0.19}}
 UPSET_BT = {"n": 249, "won": 0.402, "implied": 0.403, "roi": -0.021}
+
+
+def market_center(rungs, home, away, p_home_ml, market):
+    """The market's own expected home margin and total: the home line
+    FanDuel prices at a coin flip (interpolated along its ladder) and the
+    total likewise. With no spread ladder, the half-point spread whose
+    v7 win probability matches the moneyline."""
+    pts = []   # (home line L, P(home covers L))
+    tots = []  # (total line, P(over))
+    for r in rungs:
+        d = r.get("desc", "")
+        m = re.match(r"^([A-Z]{2,3}) ([+-][\d.]+)$", d)
+        if m and m.group(1) in (home, away):
+            ln = float(m.group(2))
+            pts.append((ln, r["p"]) if m.group(1) == home
+                       else (-ln, 1.0 - r["p"]))
+            continue
+        m = re.match(r"^Over ([\d.]+) pts$", d)
+        if m:
+            tots.append((float(m.group(1)), r["p"]))
+
+    def crossing(pairs):
+        pairs = sorted(pairs)
+        for (x0, p0), (x1, p1) in zip(pairs, pairs[1:]):
+            if (p0 - 0.5) * (p1 - 0.5) <= 0 and p0 != p1:
+                return x0 + (0.5 - p0) * (x1 - x0) / (p1 - p0)
+        return min(pairs, key=lambda q: abs(q[1] - 0.5))[0] if pairs else None
+
+    L = crossing(pts)
+    if L is None:
+        grid = [i / 2 for i in range(-48, 49)]
+        spread_home = min(grid, key=lambda s: abs(
+            market.predict(s, 44.0)["p_home"] - p_home_ml))
+    else:
+        spread_home = round(-L * 2) / 2
+    t = crossing(tots)
+    total = round(t * 2) / 2 if t is not None else 44.0
+    return spread_home, total
 
 
 def log_upsets(upsets, week):

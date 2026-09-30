@@ -116,6 +116,8 @@ def replay(games, K, HFA, regress=1 / 3):
                 flags[side] = (bool(qb and usual and qb != usual),
                                bool(qb and usual_fb and qb != usual_fb))
             rows.append({"m": (ra - rb) / 25.0, "wk": g["week"],
+                         "season": g["season"], "home": g["home"],
+                         "away": g["away"],
                          "actual": g["hs"] - g["as"],
                          "pm": devig(g["hml"], g["aml"]),
                          "hml": g["hml"], "aml": g["aml"],
