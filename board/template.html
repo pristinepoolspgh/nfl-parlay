@@ -485,12 +485,12 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
       <div class="ctl" id="ctl-props"><label for="propdn">Props</label>
         <div class="step"><button id="propdn" aria-label="Fewer props">&minus;</button><span class="val" id="propv">1</span><button id="propup" aria-label="More props">+</button></div>
       </div>
-      <div class="ctl" id="ctl-target"><label for="target">Safety target</label>
+      <div class="ctl" id="ctl-target"><label for="target">Safer ticket</label>
         <select id="target">
-          <option value="0" selected>Off — safest picks</option>
-          <option value="0.80">80% ticket (alt lines)</option>
-          <option value="0.85">85% ticket (alt lines)</option>
-          <option value="0.90">90% ticket (alt lines)</option>
+          <option value="0" selected>Off: just the safest picks</option>
+          <option value="0.80">80% chance to hit</option>
+          <option value="0.85">85% chance to hit</option>
+          <option value="0.90">90% chance to hit</option>
         </select>
       </div>
       <div class="ctl" id="ctl-pay"><label for="paygoal">Payout goal</label>
@@ -501,7 +501,7 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
       </div>
     </div>
     <div class="custombar" id="custombar" hidden>
-      <span>Tap any price on the board — moneylines, spreads, totals, alt lines, props, TD scorers. <b>+</b> on Legs adds the safest leg from a game you haven't used.</span>
+      <span>Tap any price on the board — to-win bets, spreads, totals, other lines, player props, TD scorers. <b>+</b> on Legs adds the safest leg from a game you haven't used.</span>
       <button id="reset" type="button">Clear</button>
     </div>
     <ul class="legs" id="legs"></ul>
@@ -516,9 +516,9 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
     </div>
     <div class="tear"></div>
     <div class="summary">
-      <div class="stat"><div class="k">Hits</div><div class="v" id="comb"></div></div>
+      <div class="stat"><div class="k">Chance it hits</div><div class="v" id="comb"></div></div>
       <div class="stat pay"><div class="k">FD pays</div><div class="v" id="pay"></div></div>
-      <div class="stat"><div class="k">Fair value</div><div class="v" id="fair"></div></div>
+      <div class="stat"><div class="k">Fair payout</div><div class="v" id="fair"></div></div>
     </div>
     <div class="spice">
       <div class="zones"><i></i><i></i><i></i><i></i><i></i><span class="pin" id="pin"></span></div>
@@ -526,7 +526,7 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
     </div>
     <div class="stub">
       <div class="code" aria-hidden="true"></div>
-      <small>PB &middot; de-vigged from FanDuel&rsquo;s board<br>fair math &middot; no vig &middot; good luck</small>
+      <small>PB &middot; FanDuel odds, their cut removed<br>honest math &middot; good luck</small>
     </div>
   </section>
 
@@ -536,58 +536,52 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
   <h2 id="frhead" hidden>Friends&rsquo; tickets <small>&middot; what the crew is riding</small></h2>
   <section class="card" id="frcard" hidden><div id="frtickets"></div></section>
 
-  <h2 id="scorehead" hidden>On the field <small>&middot; tap a live price to bet in-game</small></h2>
+  <h2 id="scorehead" hidden>On the field <small>&middot; live scores &middot; tap a price to bet during the game</small></h2>
   <section class="card scorebox" id="scorecard" hidden><ul class="rows" id="scores"></ul>
-    <div class="note" id="livenote" hidden>Live lines move every play and suspend
-    mid-snap; these prices are from the last refresh, and the FanDuel slip shows
-    the current price when it opens — check it before you fire.</div>
+    <div class="note" id="livenote" hidden>Live odds change every play and lock
+    during plays. These are from the last update, so check the price on the
+    FanDuel slip before you bet.</div>
   </section>
 
-  <h2 id="simshead" hidden>The sims <small>&middot; every game priced from the market&rsquo;s own line, with 20 seasons of real outcomes for the shape &middot; results rating alongside</small></h2>
+  <h2 id="simshead" hidden>The sims <small>&middot; the computer&rsquo;s take on every game &middot; biggest disagreements first</small></h2>
   <section class="card" id="simscard" hidden><ul class="rows" id="simsboard"></ul>
-    <div class="upnote">How to read it: <b>sims</b> (v7) start from FanDuel's own
-    spread and total and add what the market's number leaves out: how
-    football scores really land around a line (the pile-ups at 3 and 7,
-    and totals scattering about 13 points, not 10). Tested on 2,008 games
-    it never saw, that prices alt lines better than the old model, and
-    nothing added on top of the line tested better than the line itself.
-    <b>rating</b> is the old scores-only power rating, kept as research: over
-    2,193 graded games its disagreements with the market predicted nothing.
-    A <b>ML vs spread</b> tag means FanDuel's moneyline is out of step with
-    its own spread by 3+ points. Tap a price to add it to your ticket.</div></section>
+    <div class="upnote">How to read it: <b>sims</b> is the computer's forecast.
+    It starts from FanDuel's own spread and total, then uses 20 years of real
+    NFL scores to work out everything else, like how often games end with a
+    3- or 7-point margin. <b>old model</b> is our first forecast, built only from
+    past scores. It's shown for comparison, but in past seasons it wasn't
+    better than FanDuel. A yellow <b>win price</b> tag means FanDuel's odds to
+    win don't match its own spread. Tap a price to add it to your ticket.</div></section>
 
-  <h2 id="uphead" hidden>Upset watch <small>&middot; the results rating picks the underdog to win outright</small></h2>
+  <h2 id="uphead" hidden>Upset watch <small>&middot; underdogs the old model thinks will win</small></h2>
   <section class="card" id="upcard" hidden><ul class="rows" id="upboard"></ul>
     <div class="upnote" id="upnote"></div></section>
 
-  <h2 id="simhead">Sims&rsquo; calls <small>&middot; alt lines FanDuel prices 5+ points away from the sims&rsquo; price off its own line &middot; the ladder check</small></h2>
-  <section class="card" id="simcard"><ul class="rows" id="simboard"><li class="empty">No alt line is 5+ points off the sims' price this week: FanDuel's ladders line up with 20 seasons of real outcomes. Nothing to call.</li></ul></section>
+  <h2 id="simhead">Price check <small>&middot; spreads or totals FanDuel prices 5%+ off from its own main line</small></h2>
+  <section class="card" id="simcard"><ul class="rows" id="simboard"><li class="empty">Nothing this week. FanDuel's prices all line up with each other.</li></ul></section>
 
-  <h2 id="slatehead">The board <small>&middot; tap any price to build your own &middot; alt lines and notes open under each game</small></h2>
+  <h2 id="slatehead">The board <small>&middot; tap any price to add it &middot; more lines and notes under each game</small></h2>
   <section class="card"><ul class="rows" id="slate"></ul></section>
 
-  <h2 id="prophead">Props <small>&middot; strongest priced sides, one per player &middot; every player&rsquo;s props are under each game</small></h2>
+  <h2 id="prophead">Player props <small>&middot; the likeliest bet for each player &middot; every player&rsquo;s props are under each game</small></h2>
   <section class="card"><ul class="rows" id="propboard"></ul></section>
 
-  <h2 id="tdhead" hidden>TD scorers <small>&middot; anytime TD &middot; one-sided market, so odds carry the book&rsquo;s vig</small></h2>
+  <h2 id="tdhead" hidden>TD scorers <small>&middot; to score a touchdown anytime &middot; these odds still include FanDuel&rsquo;s cut</small></h2>
   <section class="card" id="tdcard" hidden><ul class="rows" id="tdboard"></ul></section>
 
-  <h2 id="readhead" hidden>The read <small>&middot; the model&rsquo;s pregame judgment, graded like everything else</small></h2>
+  <h2 id="readhead" hidden>The read <small>&middot; our pregame take, graded after the games</small></h2>
   <section class="card" id="readcard" hidden><div class="book" id="read"></div></section>
 
-  <h2 id="bookhead" hidden>The book so far <small>&middot; what the market said vs what happened</small></h2>
+  <h2 id="bookhead" hidden>Scoreboard <small>&middot; how FanDuel&rsquo;s favorites and our picks have done</small></h2>
   <section class="card" id="bookcard" hidden><div class="book" id="book"></div></section>
 
-  <footer>Probabilities are de-vigged market estimates (each market’s sides sum to
-  100%), not predictions. The sims (v7) take the market’s own spread and
-  total as the center and price every line from 20 seasons of real
-  outcomes around it; nothing added on top of the market tested better.
-  The “results rating” is a power rating from final scores, with a dock
-  when a starting QB is out and a wind press on totals, shown as research
-  and named in the notes. Subtler injuries stay judgment calls, which is why notes the
-  injury report explains are dismissed in plain words. Fair figures exclude the book’s vig; FanDuel
-  reprices same-game combos on the slip. Lines move; check the slip before
-  betting. Nothing here is betting advice.</footer>
+  <footer>Percentages are FanDuel's odds with FanDuel's cut taken out, so
+  both sides add up to 100%. They're estimates, not promises. The sims start
+  from FanDuel's line and use 20 years of real scores for everything else.
+  The old model uses past scores only and is shown for comparison. FanDuel
+  changes the payout on same-game parlays and lines move, so always check
+  the price on the FanDuel slip before you bet. Nothing here is betting
+  advice.</footer>
 </div>
 
 <div class="updbar" id="updbar" hidden role="status" aria-live="polite">
@@ -1049,7 +1043,7 @@ function render(){
   $("legs").innerHTML = ticketLegs.length
     ? ticketLegs.map((l,i) => legRow(i+1, l, isCustom)).join("")
     : `<li class="empty">${isCustom
-        ? "Your ticket is empty. Tap any price below — a moneyline, spread, total, alt line, prop or TD scorer — and it lands here."
+        ? "Your ticket is empty. Tap any price below — a to-win bet, spread, total, other line, player prop or TD scorer — and it lands here."
         : "Empty ticket — tap prices on the board below."}</li>`;
   document.querySelectorAll("#legs .rm").forEach(b =>
     b.onclick = () => { custom.delete(b.dataset.k); render(); });
@@ -1077,22 +1071,22 @@ function render(){
     $("vline").textContent = ticketLegs.length + " leg" + (ticketLegs.length>1?"s":"") + ", hand-picked";
   } else if (payMode && shortfall){
     $("vlabel").textContent = "Out of range";
-    $("vline").textContent = `the whole board tops out at ${decToAm(fdDec)} — showing the longest build`;
+    $("vline").textContent = `nothing on the board pays that much; the most it gets to is ${decToAm(fdDec)}`;
   } else if (payMode){
     const v = VERDICTS.find(v => combined >= v[0]);
     const grew = ticketLegs.length > legs
-      ? ` · grew to ${ticketLegs.length} legs`
+      ? ` · needed ${ticketLegs.length} legs to get there`
       : ticketLegs.length < legs
-      ? ` · best build needs only ${ticketLegs.length} — extra legs just feed the vig`
+      ? ` · only ${ticketLegs.length} legs needed; more legs just give FanDuel a bigger cut`
       : "";
     $("vlabel").textContent = fd(pay) + " ticket · " + v[1].toLowerCase();
-    $("vline").textContent = `most likely build paying it — posted ${decToAm(fdDec)}${grew}`;
+    $("vline").textContent = `the likeliest ticket that pays it: ${decToAm(fdDec)}${grew}`;
   } else if (target > 0 && shortfall){
     $("vlabel").textContent = "Out of reach";
-    $("vline").textContent = `board tops out at ${pct(combined)} for ${legs} legs — this is the safest possible`;
+    $("vline").textContent = `the safest ${legs}-leg ticket possible is ${pct(combined)}`;
   } else if (target > 0){
     $("vlabel").textContent = pct(target).replace(".0%","%")+" ticket";
-    $("vline").textContent = "alt lines traded for the best payout that stays over target";
+    $("vline").textContent = "safer lines swapped in, keeping the best payout that still hits your target";
   } else {
     const v = VERDICTS.find(v => combined >= v[0]);
     $("vlabel").textContent = v[1];
@@ -1297,7 +1291,7 @@ $("slate").innerHTML = D.games.map((g, i) => {
   if (L.fs && L.ds) main.push(`<span class="grp"><span class="lab">Spread</span>${lineBtn(L.fs)}${lineBtn(L.ds)}</span>`);
   if (L.ov && L.un) main.push(`<span class="grp"><span class="lab">Total</span>${lineBtn(L.ov)}${lineBtn(L.un)}</span>`);
   const ladder = L.ladder.length
-    ? `<button class="more" data-x="gl${i}">alt lines</button>` : "";
+    ? `<button class="more" data-x="gl${i}">more lines</button>` : "";
   const hasPP = ((D.menu || {})[g.matchup] || []).length > 0;
   const ppBtn = hasPP ? `<button class="more" data-x="gp${i}" data-mu="${esc(g.matchup)}">player props</button>` : "";
   const lines = main.length || ladder || ppBtn
@@ -1327,7 +1321,7 @@ function propsPanel(mu){
     html += `<div class="pp"><span class="nm">${esc(pl.n)}${pl.pos ? `<small>${pl.pos}</small>` : ""}</span>${dvpTag(pl.n)}<div class="chips">${chips.join("")}</div></div>`;
   }
   const bt = D.dvp_bt || {};
-  html += `<p class="pnote">Defense ranks: 1st-most = softest matchup. Green = top 8 soft, red = bottom 8. Treat them as context: over 2022–25 a defense's first-two-weeks rank vs a position matched the rest of its season only weakly (TEs ${(bt.wk2||{}).TE}, WRs ${(bt.wk2||{}).WR}, where 1 = perfect), and FanDuel's line already knows the matchup. TD prices carry the book's vig.</p>`;
+  html += `<p class="pnote">Defense ranks: "4th-most" means that defense gives up the 4th-most fantasy points to that position (an easy matchup). Green = one of the 8 easiest, red = one of the 8 toughest. Take it with a grain of salt: early-season ranks don't predict much, and FanDuel's odds already account for the matchup. TD odds still include FanDuel's cut.</p>`;
   return html;
 }
 
@@ -1356,18 +1350,16 @@ if ((D.upsets || []).length){
   $("upboard").innerHTML = D.upsets.map(u => `
     <li style="--tc:${TEAMCOLOR[u.team] || "var(--money)"}"><span class="tab"></span>
       <span><span class="m">${u.team} over ${u.over}</span><br>
-        <span class="t">${u.matchup} · ${kick(u.start)} · rating ${(u.sp*100).toFixed(0)}% vs market ${(u.p*100).toFixed(0)}%</span></span>
+        <span class="t">${u.matchup} · ${kick(u.start)} · old model ${(u.sp*100).toFixed(0)}% vs FanDuel ${(u.p*100).toFixed(0)}%</span></span>
       <span class="sides"><button class="side" data-k="${u.market}:${u.sel}">
         ${u.team} ${fd(u.odds)}<small>${pct(u.p)}</small></button></span></li>`).join("");
   const bt = D.upset_bt || {};
-  $("upnote").innerHTML = `These are the games where the results rating gives the
-    underdog at least a coin flip and 10+ points more than the price does.
-    The honest record: across ${bt.n} such games since 2015 the dogs won
-    <b>${(bt.won*100).toFixed(0)}%</b> — right where the market had them
-    (${(bt.implied*100).toFixed(0)}%), not the ${UPSET_TXT} the rating claimed.
-    So they're live dogs that pay like it, not locks. Every call this season
-    is logged and graded.
-    <button class="sharebtn" id="upload" type="button">Put the rating’s upsets on my ticket</button>`;
+  $("upnote").innerHTML = `The old model gives these underdogs at least a 50/50
+    shot, 10%+ more than FanDuel does. Honest record: in ${bt.n} games like
+    this since 2015 the underdog won <b>${(bt.won*100).toFixed(0)}%</b> of the
+    time, the same as FanDuel's odds said (${(bt.implied*100).toFixed(0)}%). So
+    they're longshots that pay well, not sure things. Every pick is tracked.
+    <button class="sharebtn" id="upload" type="button">Add these underdogs to my ticket</button>`;
   $("upload").onclick = () => {
     manual = true;
     D.upsets.forEach(u => { const k = u.market + ":" + u.sel;
@@ -1381,7 +1373,7 @@ if ((D.simbets || []).length){
   $("simboard").innerHTML = D.simbets.map(r => `
     <li style="--tc:var(--money)"><span class="tab"></span>
       <span><span class="m">${r.desc}</span><br>
-        <span class="t">${r.matchup} · sims ${(r.sp*100).toFixed(0)}% vs market ${(r.p*100).toFixed(0)}%</span></span>
+        <span class="t">${r.matchup} · sims ${(r.sp*100).toFixed(0)}% vs FanDuel ${(r.p*100).toFixed(0)}%</span></span>
       <span class="sides"><button class="side" data-k="${r.market}:${r.sel}">
         ${fd(r.odds)}<small>${pct(r.p)}</small></button></span></li>`).join("");
 }
@@ -1421,20 +1413,20 @@ if (D.games.some(g => g.simx)){
     const mlGap = fav.p - g.ep;                  // FanDuel ML vs its own spread
     const tags = [];
     if (Math.abs(mlGap) >= 0.03)
-      tags.push(`<span class="utag">${fav.team} ML ${Math.round(Math.abs(mlGap) * 100)} pts ${mlGap > 0 ? "above" : "below"} its spread</span>`);
-    if (g.upset) tags.push(`<span class="utag">rating: upset</span>`);
+      tags.push(`<span class="utag">${fav.team} win price ${Math.round(Math.abs(mlGap) * 100)}% ${mlGap > 0 ? "high" : "low"} for its spread</span>`);
+    if (g.upset) tags.push(`<span class="utag">old model: upset</span>`);
     for (const [t, pts] of Object.entries((g.adj || {}).dock || {}))
-      tags.push(`<span class="utag" style="color:var(--muted);border-color:var(--edge)">rating docks ${t} −${pts} (QB)</span>`);
-    if (g.explained) tags.push(`<span class="utag" style="color:var(--muted);border-color:var(--edge)">rating gap explained: QB out</span>`);
-    const gapTxt = Math.abs(gap) < 0.03 ? "rating agrees"
-      : `rating ${gap > 0 ? "likes" : "fades"} ${fav.team} ${Math.round(Math.abs(gap) * 100)}`;
+      tags.push(`<span class="utag" style="color:var(--muted);border-color:var(--edge)">${t} starting QB out</span>`);
+    if (g.explained) tags.push(`<span class="utag" style="color:var(--muted);border-color:var(--edge)">QB injury explains it</span>`);
+    const gapTxt = Math.abs(gap) < 0.03 ? "old model agrees"
+      : `old model ${gap > 0 ? "higher" : "lower"} on ${fav.team} by ${Math.round(Math.abs(gap) * 100)}%`;
     const pickBtn = t => { const s = g.sides.find(x => x.team === t);
       return `<button class="side" data-k="${g.market}:${s.sel}">${t} ${fd(s.odds)}<small>${pct(s.p)}</small></button>`; };
     const score = (pr) => pr.h >= pr.a ? `${home} ${pr.h}, ${away} ${pr.a}` : `${away} ${pr.a}, ${home} ${pr.h}`;
     return {gap: Math.abs(gap), html: `<li class="simrow" style="--tc:${TEAMCOLOR[simPick] || "var(--edge)"}"><span class="tab"></span>
       <span><span class="m">${g.matchup} <small>${kick(g.start)}</small></span>
-        <span class="kv"><span>sims</span> ${score(g.proj)} · ${simPick} ${Math.round(simPickP * 100)}% · ${sSpread} · total ${g.simx.t}</span>
-        <span class="kv"><span>rating</span> ${score(rp)} · ${rPick} ${Math.round(rPickP * 100)}%</span>
+        <span class="kv"><span>sims</span> ${score(g.proj)} · ${simPick} ${Math.round(simPickP * 100)}% to win · ${sSpread} · total ${g.simx.t}</span>
+        <span class="kv"><span>old model</span> ${score(rp)} · ${rPick} ${Math.round(rPickP * 100)}%</span>
         ${tags.length ? `<span class="tags">${tags.join(" ")}</span>` : ""}</span>
       <span class="sides" style="flex-direction:column;align-items:flex-end;gap:6px"><span class="gap${Math.abs(gap) >= 0.1 ? " big" : ""}">${gapTxt}</span>${pickBtn(simPick)}</span></li>`};
   }).sort((a, b) => b.gap - a.gap);

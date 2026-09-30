@@ -712,39 +712,41 @@ def build_snapshot():
         mp, epc = f"{m*100:.0f}%", f"{e*100:.0f}%"
         proj = g.get("rproj")
         away_t, home_t = g["matchup"].split(" @ ")
-        ps = (f"Results rating: {home_t} {proj['h']}\u2013{proj['a']} {away_t}. "
+        ps = (f"Old model: {home_t} {proj['h']}\u2013{proj['a']} {away_t}. "
               if proj else "")
         docked = set(((g.get("adj") or {}).get("dock") or {}))
         if edge < 0 and _qb_hurt(dog) and dog not in docked:
-            g["say"] = (ps + f"Our numbers only make {fav} {epc}, but the market's "
-                        f"{mp} knows {dog}'s QB is hurt — gap explained, "
-                        f"no edge.")
+            g["say"] = (ps + f"It gives {fav} only {epc} to win, but FanDuel's "
+                        f"{mp} knows {dog}'s quarterback is hurt. That "
+                        f"explains the difference.")
             g["sayx"] = True
             g["explained"] = True
         elif edge > 0 and _qb_hurt(fav) and fav not in docked:
-            g["say"] = (ps + f"Our numbers like {fav} at {epc} vs the market's "
-                        f"{mp}, but {fav}'s QB injury explains the market's "
-                        f"caution.")
+            g["say"] = (ps + f"It gives {fav} {epc} to win vs FanDuel's {mp}, "
+                        f"but {fav}'s quarterback is hurt, which explains "
+                        f"FanDuel's lower number.")
             g["sayx"] = True
             g["explained"] = True
         elif edge < 0:
-            g["say"] = (ps + f"The price says {fav} {mp}; their results say "
-                        f"more like {epc}. Either the number is rich — or "
-                        f"the market knows something the scores don't.")
+            g["say"] = (ps + f"FanDuel says {fav} wins {mp} of the time; past "
+                        f"scores say more like {epc}. Either FanDuel has "
+                        f"{fav} too high, or it knows something the scores "
+                        f"don't (usually that).")
         else:
-            g["say"] = (ps + f"{fav} have played better than this price: our "
-                        f"numbers say {epc}, the market only {mp}. Value on "
-                        f"{fav} unless there's news the scores can't see.")
+            g["say"] = (ps + f"{fav} have played better than this price: "
+                        f"past scores say {epc} to win, FanDuel only {mp}. "
+                        f"Worth a look on {fav} unless there's news the "
+                        f"scores can't see.")
 
     # Say what the model already weighed, so nobody double-counts it.
     for g in games:
         adj = g.get("adj") or {}
-        bits = [f"results rating docks {t} {p:g} pts (QB change)"
+        bits = [f"{t} starting QB out (−{p:g} pts)"
                 for t, p in (adj.get("dock") or {}).items()]
         if adj.get("wx"):
-            bits.append(f"weather trims its total {abs(adj['wx']):g} pts")
+            bits.append(f"wind/rain (total −{abs(adj['wx']):g} pts)")
         if bits:
-            extra = "Already in the rating: " + "; ".join(bits) + "."
+            extra = "The old model already counted: " + "; ".join(bits) + "."
             if g.get("say"):
                 g["say"] += " " + extra
             else:
