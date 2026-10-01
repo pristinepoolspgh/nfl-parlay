@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-29T13:25Z",
+ "updated": "2026-10-01T23:13Z",
  "games": 31,
  "predicted": 0.6697,
  "actual": 0.5806,
@@ -130,7 +130,7 @@
   "brier": 0.2304
  },
  "upset_calls": {
-  "calls": 2,
+  "calls": 4,
   "graded": 1,
   "won": 1,
   "implied": 0.3699,
@@ -148,6 +148,20 @@
     "matchup": "JAX @ CIN",
     "dog": "JAX",
     "odds": 112.0,
+    "won": null
+   },
+   {
+    "week": 4,
+    "matchup": "ARI @ NYG",
+    "dog": "NYG",
+    "odds": 106.0,
+    "won": null
+   },
+   {
+    "week": 4,
+    "matchup": "GB @ TB",
+    "dog": "TB",
+    "odds": 150.0,
     "won": null
    }
   ]
