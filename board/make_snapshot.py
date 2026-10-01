@@ -376,7 +376,8 @@ def build_snapshot():
         e = events[m["eventId"]]
         games.append({"matchup": e["matchup"], "start": e["start"],
                       "market": m["marketId"], "sides": sides})
-    games.sort(key=lambda g: -g["sides"][0]["p"])
+    # Kickoff order: tonight's game is the first thing on the board.
+    games.sort(key=lambda g: (g["start"], -g["sides"][0]["p"]))
 
     # Live in-play markets (ML / spread / total) for started games.
     started = {}
@@ -467,6 +468,15 @@ def build_snapshot():
             seen.add(c["player"])
             c["p"] = round(c["p"], 5)
             props.append(c)
+    # The Props section: each game's 4 likeliest player bets, in kickoff
+    # order (every player's full menu lives under the game).
+    start_of = {g["matchup"]: g["start"] for g in games}
+    per_game = {}
+    for c in props:
+        if c["matchup"] in start_of and len(per_game.setdefault(c["matchup"], [])) < 4:
+            per_game[c["matchup"]].append(c)
+    props = [c for mu in sorted(per_game, key=lambda m: start_of[m])
+             for c in per_game[mu]]
 
     # Availability, news, weather — fetched BEFORE the model so it can
     # weigh them; attached to the game cards here too.
@@ -685,8 +695,9 @@ def build_snapshot():
         st = status_by_name.get(_norm_name(c["player"]))
         if st:
             c["inj"] = st
-    tds.sort(key=lambda r: -r["p"])
-    tds = tds[:20]
+    kick_of = {g["matchup"]: g["start"] for g in games}
+    tds = [r for r in tds if r["matchup"] in kick_of]
+    tds.sort(key=lambda r: (kick_of[r["matchup"]], -r["p"]))
     for c in tds:
         st = status_by_name.get(_norm_name(c["player"]))
         if st:
@@ -820,7 +831,7 @@ def build_snapshot():
     stamp = (datetime.now(np._EASTERN) if np._EASTERN
              else datetime.utcnow()).strftime("%b %d, %Y %I:%M %p ET")
     return {"generated": stamp, "week": week, "games": games,
-            "props": props[:24], "tds": tds, "alts": alts,
+            "props": props, "tds": tds, "alts": alts,
             "simbets": simbets, "upsets": upsets, "upset_bt": UPSET_BT,
             "menu": menu, "dvp": dv, "dvp_bt": DVP_BT,
             "scores": scores, "live": live}

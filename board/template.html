@@ -563,10 +563,10 @@ body.hassend{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
   <h2 id="slatehead">The board <small>&middot; tap any price to add it &middot; more lines and notes under each game</small></h2>
   <section class="card"><ul class="rows" id="slate"></ul></section>
 
-  <h2 id="prophead">Player props <small>&middot; the likeliest bet for each player &middot; every player&rsquo;s props are under each game</small></h2>
+  <h2 id="prophead">Player props <small>&middot; each game&rsquo;s 4 likeliest player bets, soonest game first &middot; every player&rsquo;s props are under each game</small></h2>
   <section class="card"><ul class="rows" id="propboard"></ul></section>
 
-  <h2 id="tdhead" hidden>TD scorers <small>&middot; to score a touchdown anytime &middot; these odds still include FanDuel&rsquo;s cut</small></h2>
+  <h2 id="tdhead" hidden>TD scorers <small>&middot; top 5 per game, soonest game first &middot; these odds still include FanDuel&rsquo;s cut</small></h2>
   <section class="card" id="tdcard" hidden><ul class="rows" id="tdboard"></ul></section>
 
   <h2 id="readhead" hidden>The read <small>&middot; our pregame take, graded after the games</small></h2>
@@ -1037,6 +1037,7 @@ function render(){
       score(b) - score(a) || dec(b.sides[0].odds) - dec(a.sides[0].odds));
     ticketLegs = ranked.slice(0, legs - props).map(g => mlLeg(g, g.sides[0]))
       .concat(D.props.filter(c => c.inj !== "Out" && c.inj !== "Doubtful")
+        .slice().sort((a, b) => b.p - a.p)
         .slice(0, props).map(propLeg));
   }
   const combined = ticketLegs.reduce((a,l) => a*l.p, 1);
