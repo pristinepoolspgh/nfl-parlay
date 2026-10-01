@@ -472,9 +472,26 @@ def build_snapshot():
     # order (every player's full menu lives under the game).
     start_of = {g["matchup"]: g["start"] for g in games}
     per_game = {}
+    # Each game leads with its quarterbacks' passing yards and passing TDs
+    # (near 50/50 lines never make a "likeliest" list, but they're the
+    # props people look for first), then its 4 likeliest other bets.
+    qb_rows = {}
+    for c in cands:
+        if c["matchup"] in start_of and c["type"] in ("Passing Yds", "Passing TDs"):
+            c["p"] = round(c["p"], 5)
+            qb_rows.setdefault(c["matchup"], []).append(c)
+    shown = set()
+    for mu, rows in qb_rows.items():
+        rows.sort(key=lambda c: (c["player"], c["type"] != "Passing Yds"))
+        per_game[mu] = rows[:4]
+        shown.update((c["player"], c["type"]) for c in rows[:4])
+    others = {}
     for c in props:
-        if c["matchup"] in start_of and len(per_game.setdefault(c["matchup"], [])) < 4:
-            per_game[c["matchup"]].append(c)
+        if (c["matchup"] in start_of and (c["player"], c["type"]) not in shown
+                and len(others.setdefault(c["matchup"], [])) < 4):
+            others[c["matchup"]].append(c)
+    for mu, rows in others.items():
+        per_game.setdefault(mu, []).extend(rows)
     props = [c for mu in sorted(per_game, key=lambda m: start_of[m])
              for c in per_game[mu]]
 
