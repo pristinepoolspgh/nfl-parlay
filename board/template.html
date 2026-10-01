@@ -67,6 +67,12 @@ body{
 .wrap{max-width:460px; margin:0 auto; display:flex; flex-direction:column; gap:18px}
 @media (display-mode: standalone){
   body{padding-top:calc(20px + env(safe-area-inset-top, 0px))}
+  /* Home Screen app: a solid strip behind the clock and battery so the
+     board doesn't scroll underneath them. */
+  body::before{
+    content:""; position:fixed; z-index:25; left:0; right:0; top:0;
+    height:env(safe-area-inset-top, 0px); background:var(--turf-b);
+  }
 }
 .updbar{
   position:fixed; left:0; right:0; top:0; z-index:30;
@@ -1300,7 +1306,7 @@ $("slate").innerHTML = D.games.map((g, i) => {
   const ladderBox = L.ladder.length ? `<span class="ladder" id="gl${i}" hidden>${
     L.ladder.map(([lab, rs]) => `<span class="lab">${lab}</span><span class="chips">${
       rs.map(r => lineBtn(r, true)).join("")}</span>`).join("")}</span>` : "";
-  const utag = g.upset ? `<span class="utag">sims: upset</span>` : "";
+  const utag = g.upset ? `<span class="utag">old model: upset</span>` : "";
   return `<li style="--tc:${TEAMCOLOR[fav.team] || "var(--edge)"}"><span class="tab"></span>
     <span><span class="m">${g.matchup}${utag}</span><br><span class="t">${kick(g.start)}${sim}</span>${more}</span>
     <span class="sides">${btn(g.sides[0])}${btn(g.sides[1])}</span>${lines}${ladderBox}${
@@ -1993,4 +1999,29 @@ if (MIRROR){
   document.addEventListener("visibilitychange", () => pullLive(2 * 60 * 1000));
   setInterval(() => pullLive(LIVE_EVERY - 30 * 1000), 60 * 1000);
 }
+
+// iPhone Home Screen apps can lose track of the screen's bottom edge
+// after switching apps (e.g. back from FanDuel), leaving bottom-pinned
+// bars floating mid-screen. Re-pin the bet bar to the visible bottom.
+function pinBottomBar(){
+  const bar = $("sendbar"), vv = window.visualViewport;
+  if (!bar || !vv) return;
+  const shift = Math.round(vv.height + vv.offsetTop - window.innerHeight);
+  bar.style.transform = Math.abs(shift) > 1 ? `translateY(${shift}px)` : "";
+}
+if (window.visualViewport){
+  visualViewport.addEventListener("resize", pinBottomBar);
+  visualViewport.addEventListener("scroll", pinBottomBar);
+}
+addEventListener("pageshow", pinBottomBar);
+addEventListener("orientationchange", () => setTimeout(pinBottomBar, 300));
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden){
+    // Nudging the scroll position makes iOS recompute the viewport.
+    window.scrollTo(window.scrollX, window.scrollY + 1);
+    window.scrollTo(window.scrollX, window.scrollY - 1);
+    setTimeout(pinBottomBar, 250);
+  }
+});
+document.addEventListener("focusout", () => setTimeout(pinBottomBar, 250));
 </script>
