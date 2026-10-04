@@ -30,3 +30,4 @@
 {"date": "2026-09-27", "week": 2, "matchup": "LAR @ DEN", "fav": "LAR", "p_fav": 0.56349, "odds": -142.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "LAR 26 - DEN 30"}
 {"date": "2026-09-28", "week": 2, "matchup": "PHI @ CHI", "fav": "PHI", "p_fav": 0.63865, "odds": -198.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "PHI 7 - CHI 27"}
 {"date": "2026-10-01", "week": 4, "matchup": "PIT @ CLE", "fav": "PIT", "p_fav": 0.55066, "odds": -134.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "PIT 24 - CLE 27"}
+{"date": "2026-10-04", "week": 4, "matchup": "IND @ WSH", "fav": "IND", "p_fav": 0.66901, "odds": -230.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "IND 30 - WSH 13"}

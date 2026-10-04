@@ -19,7 +19,7 @@
 {"date": "2026-10-04", "matchup": "LAC @ SEA", "week": 4, "mu_margin": 11.63, "mu_total": 43.54, "p_home": 0.8108, "v": 6}
 {"date": "2026-10-04", "matchup": "NE @ BUF", "week": 4, "mu_margin": 3.32, "mu_total": 46.4, "p_home": 0.5992, "v": 6}
 {"date": "2026-10-04", "matchup": "KC @ LV", "week": 4, "mu_margin": -0.59, "mu_total": 43.48, "p_home": 0.4822, "v": 6}
-{"date": "2026-10-04", "matchup": "IND @ WSH", "week": 4, "mu_margin": 0.8, "mu_total": 49.7, "p_home": 0.5243, "v": 6}
+{"date": "2026-10-04", "matchup": "IND @ WSH", "week": 4, "mu_margin": 0.8, "mu_total": 49.7, "p_home": 0.5243, "v": 6, "as_": 30, "hs": 13}
 {"date": "2026-10-04", "matchup": "GB @ TB", "week": 4, "mu_margin": 0.69, "mu_total": 46.3, "p_home": 0.5209, "v": 6}
 {"date": "2026-10-04", "matchup": "NYJ @ CHI", "week": 4, "mu_margin": 8.98, "mu_total": 46.82, "p_home": 0.7519, "v": 6}
 {"date": "2026-10-04", "matchup": "DET @ CAR", "week": 4, "mu_margin": -0.28, "mu_total": 49.8, "p_home": 0.4917, "v": 6}
@@ -37,7 +37,7 @@
 {"date": "2026-10-04", "matchup": "KC @ LV", "week": 4, "mu_margin": -5.0, "mu_total": 47.5, "p_home": 0.3226, "rr_p_home": 0.4822, "rr_margin": -0.59, "rr_total": 43.48, "v": 7}
 {"date": "2026-10-04", "matchup": "DET @ CAR", "week": 4, "mu_margin": -4.0, "mu_total": 50.5, "p_home": 0.3777, "rr_p_home": 0.4917, "rr_margin": -0.28, "rr_total": 49.8, "v": 7}
 {"date": "2026-10-04", "matchup": "GB @ TB", "week": 4, "mu_margin": -4.0, "mu_total": 39.5, "p_home": 0.3777, "rr_p_home": 0.5209, "rr_margin": 0.69, "rr_total": 46.3, "v": 7}
-{"date": "2026-10-04", "matchup": "IND @ WSH", "week": 4, "mu_margin": -3.5, "mu_total": 47.0, "p_home": 0.3937, "rr_p_home": 0.4663, "rr_margin": -1.12, "rr_total": 49.7, "v": 7}
+{"date": "2026-10-04", "matchup": "IND @ WSH", "week": 4, "mu_margin": -3.5, "mu_total": 47.0, "p_home": 0.3937, "rr_p_home": 0.4663, "rr_margin": -1.12, "rr_total": 49.7, "v": 7, "as_": 30, "hs": 13}
 {"date": "2026-10-04", "matchup": "NYJ @ CHI", "week": 4, "mu_margin": 3.5, "mu_total": 43.0, "p_home": 0.5939, "rr_p_home": 0.7519, "rr_margin": 8.98, "rr_total": 46.82, "v": 7}
 {"date": "2026-10-04", "matchup": "LAR @ PHI", "week": 4, "mu_margin": -3.0, "mu_total": 43.5, "p_home": 0.4071, "rr_p_home": 0.4809, "rr_margin": -0.63, "rr_total": 45.12, "v": 7}
 {"date": "2026-10-04", "matchup": "DEN @ SF", "week": 4, "mu_margin": 3.0, "mu_total": 47.5, "p_home": 0.5784, "rr_p_home": 0.5971, "rr_margin": 3.24, "rr_total": 45.31, "v": 7}
