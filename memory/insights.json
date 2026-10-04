@@ -185,16 +185,16 @@
  },
  "crew": null,
  "leans": {
-  "won": 1,
-  "lost": 3,
+  "won": 2,
+  "lost": 2,
   "pending": 0,
   "recent": [
    {
     "week": 4,
-    "desc": "GB to win (moneyline) @ TB",
+    "desc": "GB ML",
     "matchup": "GB @ TB",
     "p_market": 0.5857,
-    "result": "lost"
+    "result": "won"
    }
   ]
  }

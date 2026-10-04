@@ -65,6 +65,8 @@ def grade_leg(leg, finals):
     kind, desc = leg.get("kind"), leg.get("desc", "")
     if kind == "ml":
         team = desc[:-3].strip()
+        if team not in (away, home):
+            return None  # unparseable desc: leave it pending, never guess
         if away_s == home_s:
             return None  # tie: a push, leave for the human
         winner = away if away_s > home_s else home
