@@ -1,21 +1,21 @@
 {
- "updated": "2026-10-04T19:10Z",
- "games": 33,
- "predicted": 0.6661,
- "actual": 0.5758,
- "summary": "33 favorites graded: market said 66.6%, they actually won 57.6%.",
+ "updated": "2026-10-04T21:10Z",
+ "games": 41,
+ "predicted": 0.6567,
+ "actual": 0.5854,
+ "summary": "41 favorites graded: market said 65.7%, they actually won 58.5%.",
  "buckets": [
   {
    "range": "50-60%",
-   "n": 11,
-   "predicted": 0.5636,
-   "actual": 0.4545
+   "n": 16,
+   "predicted": 0.5613,
+   "actual": 0.5
   },
   {
    "range": "60-70%",
-   "n": 9,
-   "predicted": 0.6497,
-   "actual": 0.6667
+   "n": 11,
+   "predicted": 0.652,
+   "actual": 0.6364
   },
   {
    "range": "70-80%",
@@ -25,8 +25,8 @@
   },
   {
    "range": "80-90%",
-   "n": 3,
-   "predicted": 0.8345,
+   "n": 4,
+   "predicted": 0.8359,
    "actual": 1.0
   },
   {
@@ -73,6 +73,13 @@
    "score": "SEA 31 - WSH 33"
   },
   {
+   "week": 4,
+   "matchup": "NE @ BUF",
+   "fav": "BUF",
+   "p_fav": 0.69466,
+   "score": "NE 29 - BUF 26"
+  },
+  {
    "week": 2,
    "matchup": "MIN @ CHI",
    "fav": "CHI",
@@ -113,21 +120,14 @@
    "fav": "CAR",
    "p_fav": 0.57423,
    "score": "CAR 18 - CLE 21"
-  },
-  {
-   "week": 2,
-   "matchup": "LAR @ DEN",
-   "fav": "LAR",
-   "p_fav": 0.56349,
-   "score": "LAR 26 - DEN 30"
   }
  ],
  "sim": {
-  "n": 20,
-  "winner_acc": 0.65,
-  "margin_mae": 8.47,
-  "total_mae": 10.95,
-  "brier": 0.2352,
+  "n": 36,
+  "winner_acc": 0.6111,
+  "margin_mae": 7.23,
+  "total_mae": 10.2,
+  "brier": 0.2328,
   "by_version": {
    "1": {
     "n": 16,
@@ -135,23 +135,23 @@
     "brier": 0.2304
    },
    "6": {
-    "n": 2,
-    "margin_mae": 10.44,
-    "brier": 0.2635
+    "n": 10,
+    "margin_mae": 5.98,
+    "brier": 0.2268
    },
    "7": {
-    "n": 2,
-    "margin_mae": 9.5,
-    "brier": 0.2453
+    "n": 10,
+    "margin_mae": 7.1,
+    "brier": 0.2427
    }
   }
  },
  "upset_calls": {
   "calls": 4,
-  "graded": 1,
-  "won": 1,
-  "implied": 0.3699,
-  "net_per_100": 160.0,
+  "graded": 4,
+  "won": 3,
+  "implied": 0.4187,
+  "net_per_100": 278.0,
   "recent": [
    {
     "week": 3,
@@ -165,36 +165,36 @@
     "matchup": "JAX @ CIN",
     "dog": "JAX",
     "odds": 112.0,
-    "won": null
+    "won": true
    },
    {
     "week": 4,
     "matchup": "ARI @ NYG",
     "dog": "NYG",
     "odds": 106.0,
-    "won": null
+    "won": true
    },
    {
     "week": 4,
     "matchup": "GB @ TB",
     "dog": "TB",
     "odds": 150.0,
-    "won": null
+    "won": false
    }
   ]
  },
  "crew": null,
  "leans": {
   "won": 1,
-  "lost": 2,
-  "pending": 1,
+  "lost": 3,
+  "pending": 0,
   "recent": [
    {
     "week": 4,
     "desc": "GB to win (moneyline) @ TB",
     "matchup": "GB @ TB",
     "p_market": 0.5857,
-    "result": "pending"
+    "result": "lost"
    }
   ]
  }
