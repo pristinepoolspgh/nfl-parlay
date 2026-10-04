@@ -1,15 +1,15 @@
 {
- "updated": "2026-10-01T23:13Z",
- "games": 31,
- "predicted": 0.6697,
- "actual": 0.5806,
- "summary": "31 favorites graded: market said 67.0%, they actually won 58.1%.",
+ "updated": "2026-10-04T15:14Z",
+ "games": 32,
+ "predicted": 0.666,
+ "actual": 0.5625,
+ "summary": "32 favorites graded: market said 66.6%, they actually won 56.2%.",
  "buckets": [
   {
    "range": "50-60%",
-   "n": 10,
-   "predicted": 0.5649,
-   "actual": 0.5
+   "n": 11,
+   "predicted": 0.5636,
+   "actual": 0.4545
   },
   {
    "range": "60-70%",
@@ -123,11 +123,28 @@
   }
  ],
  "sim": {
-  "n": 16,
-  "winner_acc": 0.75,
-  "margin_mae": 8.1,
-  "total_mae": 11.66,
-  "brier": 0.2304
+  "n": 18,
+  "winner_acc": 0.6667,
+  "margin_mae": 7.68,
+  "total_mae": 11.58,
+  "brier": 0.2375,
+  "by_version": {
+   "1": {
+    "n": 16,
+    "margin_mae": 8.1,
+    "brier": 0.2304
+   },
+   "6": {
+    "n": 1,
+    "margin_mae": 3.07,
+    "brier": 0.2522
+   },
+   "7": {
+    "n": 1,
+    "margin_mae": 5.5,
+    "brier": 0.3356
+   }
+  }
  },
  "upset_calls": {
   "calls": 4,
@@ -144,7 +161,7 @@
     "won": true
    },
    {
-    "week": 3,
+    "week": 4,
     "matchup": "JAX @ CIN",
     "dog": "JAX",
     "odds": 112.0,
@@ -170,28 +187,14 @@
  "leans": {
   "won": 1,
   "lost": 2,
-  "pending": 0,
+  "pending": 1,
   "recent": [
    {
-    "week": 2,
-    "desc": "Under 44.5 pts",
-    "matchup": "SEA @ ARI",
-    "p_market": 0.613,
-    "result": "won"
-   },
-   {
-    "week": 2,
-    "desc": "KC -6.5",
-    "matchup": "IND @ KC",
-    "p_market": 0.481,
-    "result": "lost"
-   },
-   {
-    "week": 2,
-    "desc": "NYG +7.5",
-    "matchup": "NYG @ LAR",
-    "p_market": 0.543,
-    "result": "lost"
+    "week": 4,
+    "desc": "GB to win (moneyline) @ TB",
+    "matchup": "GB @ TB",
+    "p_market": 0.5857,
+    "result": "pending"
    }
   ]
  }
