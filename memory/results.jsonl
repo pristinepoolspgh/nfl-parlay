@@ -39,3 +39,4 @@
 {"date": "2026-10-04", "week": 4, "matchup": "JAX @ CIN", "fav": "CIN", "p_fav": 0.56713, "odds": -144.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "JAX 22 - CIN 17"}
 {"date": "2026-10-04", "week": 4, "matchup": "ARI @ NYG", "fav": "NYG", "p_fav": 0.55452, "odds": -136.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "ARI 24 - NYG 36"}
 {"date": "2026-10-04", "week": 4, "matchup": "GB @ TB", "fav": "GB", "p_fav": 0.50891, "odds": -112.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "GB 17 - TB 14"}
+{"date": "2026-10-04", "week": 4, "matchup": "MIA @ MIN", "fav": "MIN", "p_fav": 0.81523, "odds": -560.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "MIA 10 - MIN 15"}
