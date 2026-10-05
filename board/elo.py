@@ -25,6 +25,7 @@ import math
 import os
 import subprocess
 import sys
+import time
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE)
@@ -50,9 +51,16 @@ def fetch_week(year, seasontype, week):
     url = (f"{np.ESPN_URL}?dates={year}&seasontype={seasontype}"
            f"&week={week}")
     games = []
-    try:
-        payload = curl_json(url)
-    except Exception:
+    payload = None
+    for attempt in range(3):  # a silent miss drops a whole week of results
+        try:
+            payload = curl_json(url)
+            break
+        except Exception:
+            time.sleep(2 * (attempt + 1))
+    if payload is None:
+        print(f"elo: fetch failed for {year} type {seasontype} week {week}",
+              file=sys.stderr)
         return games
     for ev in payload.get("events", []):
         comp = (ev.get("competitions") or [{}])[0]

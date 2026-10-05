@@ -40,3 +40,7 @@
 {"date": "2026-10-04", "week": 4, "matchup": "ARI @ NYG", "fav": "NYG", "p_fav": 0.55452, "odds": -136.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "ARI 24 - NYG 36"}
 {"date": "2026-10-04", "week": 4, "matchup": "GB @ TB", "fav": "GB", "p_fav": 0.50891, "odds": -112.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "GB 17 - TB 14"}
 {"date": "2026-10-04", "week": 4, "matchup": "MIA @ MIN", "fav": "MIN", "p_fav": 0.81523, "odds": -560.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "MIA 10 - MIN 15"}
+{"date": "2026-10-04", "week": 4, "matchup": "LAC @ SEA", "fav": "SEA", "p_fav": 0.74344, "odds": -340.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "LAC 23 - SEA 30"}
+{"date": "2026-10-04", "week": 4, "matchup": "KC @ LV", "fav": "KC", "p_fav": 0.67779, "odds": -240.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "KC 30 - LV 27"}
+{"date": "2026-10-04", "week": 4, "matchup": "DEN @ SF", "fav": "SF", "p_fav": 0.60675, "odds": -172.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "DEN 14 - SF 24"}
+{"date": "2026-10-04", "week": 4, "matchup": "DET @ CAR", "fav": "DET", "p_fav": 0.55831, "odds": -138.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "DET 26 - CAR 32"}
