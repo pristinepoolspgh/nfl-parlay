@@ -2,3 +2,6 @@
 {"date": "2026-10-04", "matchup": "JAX @ CIN", "week": 4, "dog": "JAX", "p_mkt": 0.45327, "p_sim": 0.5709, "odds": 112.0, "won": true}
 {"date": "2026-10-04", "matchup": "ARI @ NYG", "week": 4, "dog": "NYG", "p_mkt": 0.46721, "p_sim": 0.5972, "odds": 106.0, "won": true}
 {"date": "2026-10-04", "matchup": "GB @ TB", "week": 4, "dog": "TB", "p_mkt": 0.38451, "p_sim": 0.5209, "odds": 150.0, "won": false}
+{"date": "2026-10-11", "matchup": "NYG @ WSH", "week": 5, "dog": "NYG", "p_mkt": 0.37798, "p_sim": 0.6452, "odds": 154.0}
+{"date": "2026-10-11", "matchup": "CHI @ GB", "week": 5, "dog": "GB", "p_mkt": 0.42929, "p_sim": 0.5456, "odds": 124.0}
+{"date": "2026-10-11", "matchup": "CLE @ NYJ", "week": 5, "dog": "CLE", "p_mkt": 0.45726, "p_sim": 0.5619, "odds": 110.0}

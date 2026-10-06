@@ -1,9 +1,9 @@
 {
- "updated": "2026-10-05T23:10Z",
- "games": 46,
- "predicted": 0.6593,
- "actual": 0.6087,
- "summary": "46 favorites graded: market said 65.9%, they actually won 60.9%.",
+ "updated": "2026-10-06T13:15Z",
+ "games": 47,
+ "predicted": 0.6587,
+ "actual": 0.5957,
+ "summary": "47 favorites graded: market said 65.9%, they actually won 59.6%.",
  "buckets": [
   {
    "range": "50-60%",
@@ -13,9 +13,9 @@
   },
   {
    "range": "60-70%",
-   "n": 13,
-   "predicted": 0.6505,
-   "actual": 0.6923
+   "n": 14,
+   "predicted": 0.649,
+   "actual": 0.6429
   },
   {
    "range": "70-80%",
@@ -94,6 +94,13 @@
    "score": "PHI 7 - CHI 27"
   },
   {
+   "week": 4,
+   "matchup": "ATL @ NO",
+   "fav": "NO",
+   "p_fav": 0.6301,
+   "score": "ATL 45 - NO 24"
+  },
+  {
    "week": 2,
    "matchup": "CIN @ PIT",
    "fav": "CIN",
@@ -113,21 +120,14 @@
    "fav": "HOU",
    "p_fav": 0.58,
    "score": "CIN 20 - HOU 6"
-  },
-  {
-   "week": 2,
-   "matchup": "CAR @ CLE",
-   "fav": "CAR",
-   "p_fav": 0.57423,
-   "score": "CAR 18 - CLE 21"
   }
  ],
  "sim": {
-  "n": 46,
-  "winner_acc": 0.6522,
-  "margin_mae": 6.74,
-  "total_mae": 10.3,
-  "brier": 0.2152,
+  "n": 48,
+  "winner_acc": 0.625,
+  "margin_mae": 7.43,
+  "total_mae": 10.83,
+  "brier": 0.2194,
   "by_version": {
    "1": {
     "n": 16,
@@ -135,14 +135,14 @@
     "brier": 0.2304
    },
    "6": {
-    "n": 15,
-    "margin_mae": 5.64,
-    "brier": 0.2007
+    "n": 16,
+    "margin_mae": 6.7,
+    "brier": 0.2069
    },
    "7": {
-    "n": 15,
-    "margin_mae": 6.4,
-    "brier": 0.2134
+    "n": 16,
+    "margin_mae": 7.5,
+    "brier": 0.2209
    }
   }
  },
