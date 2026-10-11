@@ -1,27 +1,27 @@
 {
- "updated": "2026-10-11T19:11Z",
- "games": 49,
- "predicted": 0.6627,
- "actual": 0.5918,
- "summary": "49 favorites graded: market said 66.3%, they actually won 59.2%.",
+ "updated": "2026-10-11T21:10Z",
+ "games": 56,
+ "predicted": 0.6577,
+ "actual": 0.625,
+ "summary": "56 favorites graded: market said 65.8%, they actually won 62.5%.",
  "buckets": [
   {
    "range": "50-60%",
-   "n": 17,
-   "predicted": 0.5611,
-   "actual": 0.4706
+   "n": 21,
+   "predicted": 0.5595,
+   "actual": 0.5238
   },
   {
    "range": "60-70%",
-   "n": 14,
-   "predicted": 0.649,
-   "actual": 0.6429
+   "n": 15,
+   "predicted": 0.6492,
+   "actual": 0.6667
   },
   {
    "range": "70-80%",
-   "n": 12,
-   "predicted": 0.7407,
-   "actual": 0.5833
+   "n": 14,
+   "predicted": 0.7415,
+   "actual": 0.6429
   },
   {
    "range": "80-90%",
@@ -123,11 +123,11 @@
   }
  ],
  "sim": {
-  "n": 50,
-  "winner_acc": 0.62,
-  "margin_mae": 7.56,
-  "total_mae": 10.68,
-  "brier": 0.224,
+  "n": 58,
+  "winner_acc": 0.6491,
+  "margin_mae": 8.07,
+  "total_mae": 10.67,
+  "brier": 0.2137,
   "by_version": {
    "1": {
     "n": 16,
@@ -140,18 +140,18 @@
     "brier": 0.2069
    },
    "7": {
-    "n": 18,
-    "margin_mae": 7.83,
-    "brier": 0.2336
+    "n": 26,
+    "margin_mae": 8.9,
+    "brier": 0.2077
    }
   }
  },
  "upset_calls": {
   "calls": 7,
-  "graded": 4,
-  "won": 3,
-  "implied": 0.4187,
-  "net_per_100": 278.0,
+  "graded": 6,
+  "won": 4,
+  "implied": 0.4269,
+  "net_per_100": 302.0,
   "recent": [
    {
     "week": 3,
@@ -193,14 +193,14 @@
     "matchup": "CHI @ GB",
     "dog": "GB",
     "odds": 124.0,
-    "won": null
+    "won": true
    },
    {
     "week": 5,
     "matchup": "CLE @ NYJ",
     "dog": "CLE",
     "odds": 110.0,
-    "won": null
+    "won": false
    }
   ]
  },
