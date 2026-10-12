@@ -54,3 +54,7 @@
 {"date": "2026-10-11", "week": 5, "matchup": "IND @ PIT", "fav": "PIT", "p_fav": 0.55452, "odds": -136.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "IND 22 - PIT 34"}
 {"date": "2026-10-11", "week": 5, "matchup": "MIN @ NO", "fav": "MIN", "p_fav": 0.54274, "odds": -130.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "MIN 23 - NO 13"}
 {"date": "2026-10-11", "week": 5, "matchup": "CLE @ NYJ", "fav": "NYJ", "p_fav": 0.54274, "odds": -130.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "CLE 12 - NYJ 17"}
+{"date": "2026-10-11", "week": 5, "matchup": "DEN @ LAC", "fav": "DEN", "p_fav": 0.62475, "odds": -186.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "DEN 23 - LAC 17"}
+{"date": "2026-10-11", "week": 5, "matchup": "DET @ ARI", "fav": "DET", "p_fav": 0.67779, "odds": -240.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "DET 45 - ARI 21"}
+{"date": "2026-10-11", "week": 5, "matchup": "SF @ SEA", "fav": "SEA", "p_fav": 0.59653, "odds": -164.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "SF 32 - SEA 29"}
+{"date": "2026-10-11", "week": 5, "matchup": "BAL @ ATL", "fav": "ATL", "p_fav": 0.52854, "odds": -122.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "BAL 30 - ATL 23"}

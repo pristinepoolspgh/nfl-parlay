@@ -56,8 +56,8 @@
 {"date": "2026-10-11", "matchup": "IND @ PIT", "week": 5, "mu_margin": 2.5, "mu_total": 44.0, "p_home": 0.5612, "rr_p_home": 0.5767, "rr_margin": 2.55, "rr_total": 47.2, "v": 7, "as_": 22, "hs": 34}
 {"date": "2026-10-11", "matchup": "MIN @ NO", "week": 5, "mu_margin": -2.0, "mu_total": 41.5, "p_home": 0.4348, "rr_p_home": 0.3597, "rr_margin": -4.74, "rr_total": 43.68, "v": 7, "as_": 23, "hs": 13}
 {"date": "2026-10-11", "matchup": "CLE @ NYJ", "week": 5, "mu_margin": 2.0, "mu_total": 40.0, "p_home": 0.5438, "rr_p_home": 0.4381, "rr_margin": -2.06, "rr_total": 43.6, "v": 7, "as_": 12, "hs": 17}
-{"date": "2026-10-11", "matchup": "DEN @ LAC", "week": 5, "mu_margin": -3.5, "mu_total": 42.5, "p_home": 0.3937, "rr_p_home": 0.3922, "rr_margin": -3.61, "rr_total": 42.94, "v": 7}
-{"date": "2026-10-11", "matchup": "DET @ ARI", "week": 5, "mu_margin": -5.0, "mu_total": 54.0, "p_home": 0.3226, "rr_p_home": 0.4419, "rr_margin": -1.93, "rr_total": 51.14, "v": 7}
-{"date": "2026-10-11", "matchup": "SF @ SEA", "week": 5, "mu_margin": 3.0, "mu_total": 47.0, "p_home": 0.5784, "rr_p_home": 0.6136, "rr_margin": 3.81, "rr_total": 46.18, "v": 7}
-{"date": "2026-10-11", "matchup": "BAL @ ATL", "week": 5, "mu_margin": 2.0, "mu_total": 44.0, "p_home": 0.5438, "rr_p_home": 0.525, "rr_margin": 0.83, "rr_total": 47.34, "v": 7}
+{"date": "2026-10-11", "matchup": "DEN @ LAC", "week": 5, "mu_margin": -3.5, "mu_total": 42.5, "p_home": 0.3937, "rr_p_home": 0.3922, "rr_margin": -3.61, "rr_total": 42.94, "v": 7, "as_": 23, "hs": 17}
+{"date": "2026-10-11", "matchup": "DET @ ARI", "week": 5, "mu_margin": -5.0, "mu_total": 54.0, "p_home": 0.3226, "rr_p_home": 0.4419, "rr_margin": -1.93, "rr_total": 51.14, "v": 7, "as_": 45, "hs": 21}
+{"date": "2026-10-11", "matchup": "SF @ SEA", "week": 5, "mu_margin": 3.0, "mu_total": 47.0, "p_home": 0.5784, "rr_p_home": 0.6136, "rr_margin": 3.81, "rr_total": 46.18, "v": 7, "as_": 32, "hs": 29}
+{"date": "2026-10-11", "matchup": "BAL @ ATL", "week": 5, "mu_margin": 2.0, "mu_total": 44.0, "p_home": 0.5438, "rr_p_home": 0.525, "rr_margin": 0.83, "rr_total": 47.34, "v": 7, "as_": 30, "hs": 23}
 {"date": "2026-10-12", "matchup": "BUF @ LAR", "week": 5, "mu_margin": 3.0, "mu_total": 54.5, "p_home": 0.5784, "rr_p_home": 0.5298, "rr_margin": 0.99, "rr_total": 49.4, "v": 7}
