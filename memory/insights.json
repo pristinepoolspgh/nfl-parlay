@@ -1,15 +1,15 @@
 {
- "updated": "2026-10-12T23:10Z",
- "games": 60,
- "predicted": 0.6543,
- "actual": 0.6167,
- "summary": "60 favorites graded: market said 65.4%, they actually won 61.7%.",
+ "updated": "2026-10-13T13:02Z",
+ "games": 61,
+ "predicted": 0.653,
+ "actual": 0.6066,
+ "summary": "61 favorites graded: market said 65.3%, they actually won 60.7%.",
  "buckets": [
   {
    "range": "50-60%",
-   "n": 23,
-   "predicted": 0.5597,
-   "actual": 0.4783
+   "n": 24,
+   "predicted": 0.5606,
+   "actual": 0.4583
   },
   {
    "range": "60-70%",
@@ -123,11 +123,11 @@
   }
  ],
  "sim": {
-  "n": 62,
-  "winner_acc": 0.6393,
-  "margin_mae": 8.14,
-  "total_mae": 10.59,
-  "brier": 0.2143,
+  "n": 63,
+  "winner_acc": 0.629,
+  "margin_mae": 8.11,
+  "total_mae": 10.68,
+  "brier": 0.2162,
   "by_version": {
    "1": {
     "n": 16,
@@ -140,9 +140,9 @@
     "brier": 0.2069
    },
    "7": {
-    "n": 30,
-    "margin_mae": 8.93,
-    "brier": 0.2096
+    "n": 31,
+    "margin_mae": 8.84,
+    "brier": 0.2137
    }
   }
  },

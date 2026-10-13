@@ -58,3 +58,4 @@
 {"date": "2026-10-11", "week": 5, "matchup": "DET @ ARI", "fav": "DET", "p_fav": 0.67779, "odds": -240.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "DET 45 - ARI 21"}
 {"date": "2026-10-11", "week": 5, "matchup": "SF @ SEA", "fav": "SEA", "p_fav": 0.59653, "odds": -164.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "SF 32 - SEA 29"}
 {"date": "2026-10-11", "week": 5, "matchup": "BAL @ ATL", "fav": "ATL", "p_fav": 0.52854, "odds": -122.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "BAL 30 - ATL 23"}
+{"date": "2026-10-12", "week": 5, "matchup": "BUF @ LAR", "fav": "LAR", "p_fav": 0.57899, "odds": -152.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "BUF 37 - LAR 34"}
