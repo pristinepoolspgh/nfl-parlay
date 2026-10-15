@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-13T13:02Z",
+ "updated": "2026-10-15T23:12Z",
  "games": 61,
  "predicted": 0.653,
  "actual": 0.6066,
@@ -147,26 +147,12 @@
   }
  },
  "upset_calls": {
-  "calls": 7,
+  "calls": 10,
   "graded": 6,
   "won": 4,
   "implied": 0.4269,
   "net_per_100": 302.0,
   "recent": [
-   {
-    "week": 3,
-    "matchup": "CIN @ PIT",
-    "dog": "PIT",
-    "odds": 160.0,
-    "won": true
-   },
-   {
-    "week": 4,
-    "matchup": "JAX @ CIN",
-    "dog": "JAX",
-    "odds": 112.0,
-    "won": true
-   },
    {
     "week": 4,
     "matchup": "ARI @ NYG",
@@ -201,6 +187,27 @@
     "dog": "CLE",
     "odds": 110.0,
     "won": false
+   },
+   {
+    "week": 6,
+    "matchup": "BAL @ CLE",
+    "dog": "CLE",
+    "odds": 188.0,
+    "won": null
+   },
+   {
+    "week": 6,
+    "matchup": "NO @ NYG",
+    "dog": "NYG",
+    "odds": -104.0,
+    "won": null
+   },
+   {
+    "week": 6,
+    "matchup": "CHI @ ATL",
+    "dog": "ATL",
+    "odds": 104.0,
+    "won": null
    }
   ]
  },
