@@ -1,15 +1,15 @@
 {
- "updated": "2026-10-15T23:12Z",
- "games": 61,
- "predicted": 0.653,
- "actual": 0.6066,
- "summary": "61 favorites graded: market said 65.3%, they actually won 60.7%.",
+ "updated": "2026-10-18T15:17Z",
+ "games": 62,
+ "predicted": 0.652,
+ "actual": 0.5968,
+ "summary": "62 favorites graded: market said 65.2%, they actually won 59.7%.",
  "buckets": [
   {
    "range": "50-60%",
-   "n": 24,
-   "predicted": 0.5606,
-   "actual": 0.4583
+   "n": 25,
+   "predicted": 0.5617,
+   "actual": 0.44
   },
   {
    "range": "60-70%",
@@ -123,11 +123,11 @@
   }
  ],
  "sim": {
-  "n": 63,
-  "winner_acc": 0.629,
-  "margin_mae": 8.11,
-  "total_mae": 10.68,
-  "brier": 0.2162,
+  "n": 64,
+  "winner_acc": 0.619,
+  "margin_mae": 8.07,
+  "total_mae": 10.67,
+  "brier": 0.2183,
   "by_version": {
    "1": {
     "n": 16,
@@ -140,19 +140,26 @@
     "brier": 0.2069
    },
    "7": {
-    "n": 31,
-    "margin_mae": 8.84,
-    "brier": 0.2137
+    "n": 32,
+    "margin_mae": 8.75,
+    "brier": 0.218
    }
   }
  },
  "upset_calls": {
-  "calls": 10,
+  "calls": 9,
   "graded": 6,
   "won": 4,
   "implied": 0.4269,
   "net_per_100": 302.0,
   "recent": [
+   {
+    "week": 4,
+    "matchup": "JAX @ CIN",
+    "dog": "JAX",
+    "odds": 112.0,
+    "won": true
+   },
    {
     "week": 4,
     "matchup": "ARI @ NYG",
@@ -200,13 +207,6 @@
     "matchup": "NO @ NYG",
     "dog": "NYG",
     "odds": -104.0,
-    "won": null
-   },
-   {
-    "week": 6,
-    "matchup": "CHI @ ATL",
-    "dog": "ATL",
-    "odds": 104.0,
     "won": null
    }
   ]

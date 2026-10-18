@@ -562,7 +562,22 @@ def build_snapshot():
                 return QB_DOCK
         implied = implied_qbs.get(mu, set())
         mine = {q for q in implied if qb_team.get(q) == team}
+        # A priced QB who is himself on the injury report (Questionable)
+        # is the real starter coming back, not a downgrade: Caleb
+        # Williams returning after Bagent out-threw him in his absence.
+        returning = {_norm_name(r["name"]) for r in inj_by_team.get(team, [])
+                     if r["pos"] == "QB"
+                     and r["status"] not in ("Out", "Doubtful")}
+        if mine & returning:
+            return 0.0
         if mine and _norm_name(qb) not in mine:
+            return QB_DOCK
+        # A backup who hasn't thrown yet this season isn't in qb_team,
+        # so "mine" misses him (Hurts went to IR and off the report;
+        # McKee is priced to start). Props up, the usual starter not
+        # priced, and an unmapped QB priced: this team changed QBs.
+        if (implied and not mine and _norm_name(qb) not in implied
+                and any(q not in qb_team for q in implied)):
             return QB_DOCK
         return 0.0
 
