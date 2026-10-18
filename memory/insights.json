@@ -1,9 +1,9 @@
 {
- "updated": "2026-10-18T21:06Z",
- "games": 70,
- "predicted": 0.648,
- "actual": 0.5857,
- "summary": "70 favorites graded: market said 64.8%, they actually won 58.6%.",
+ "updated": "2026-10-18T23:06Z",
+ "games": 71,
+ "predicted": 0.6511,
+ "actual": 0.5775,
+ "summary": "71 favorites graded: market said 65.1%, they actually won 57.7%.",
  "buckets": [
   {
    "range": "50-60%",
@@ -25,9 +25,9 @@
   },
   {
    "range": "80-90%",
-   "n": 6,
-   "predicted": 0.8267,
-   "actual": 0.8333
+   "n": 7,
+   "predicted": 0.8329,
+   "actual": 0.7143
   },
   {
    "range": "90-100%",
@@ -37,6 +37,13 @@
   }
  ],
  "upsets": [
+  {
+   "week": 6,
+   "matchup": "ARI @ LAR",
+   "fav": "LAR",
+   "p_fav": 0.87005,
+   "score": "ARI 18 - LAR 16"
+  },
   {
    "week": 5,
    "matchup": "TB @ DAL",
@@ -113,21 +120,14 @@
    "fav": "PHI",
    "p_fav": 0.63865,
    "score": "PHI 7 - CHI 27"
-  },
-  {
-   "week": 4,
-   "matchup": "ATL @ NO",
-   "fav": "NO",
-   "p_fav": 0.6301,
-   "score": "ATL 45 - NO 24"
   }
  ],
  "sim": {
-  "n": 72,
-  "winner_acc": 0.6056,
-  "margin_mae": 7.93,
-  "total_mae": 10.49,
-  "brier": 0.2239,
+  "n": 73,
+  "winner_acc": 0.5972,
+  "margin_mae": 8.03,
+  "total_mae": 10.59,
+  "brier": 0.2317,
   "by_version": {
    "1": {
     "n": 16,
@@ -140,26 +140,19 @@
     "brier": 0.2069
    },
    "7": {
-    "n": 40,
-    "margin_mae": 8.35,
-    "brier": 0.2282
+    "n": 41,
+    "margin_mae": 8.52,
+    "brier": 0.242
    }
   }
  },
  "upset_calls": {
-  "calls": 9,
+  "calls": 10,
   "graded": 8,
   "won": 5,
   "implied": 0.4233,
   "net_per_100": 390.0,
   "recent": [
-   {
-    "week": 4,
-    "matchup": "JAX @ CIN",
-    "dog": "JAX",
-    "odds": 112.0,
-    "won": true
-   },
    {
     "week": 4,
     "matchup": "ARI @ NYG",
@@ -208,6 +201,13 @@
     "dog": "NYG",
     "odds": -104.0,
     "won": false
+   },
+   {
+    "week": 6,
+    "matchup": "DAL @ GB",
+    "dog": "GB",
+    "odds": -108.0,
+    "won": null
    }
   ]
  },

@@ -68,3 +68,4 @@
 {"date": "2026-10-18", "week": 6, "matchup": "PIT @ TB", "fav": "PIT", "p_fav": 0.56713, "odds": -144.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "PIT 26 - TB 19"}
 {"date": "2026-10-18", "week": 6, "matchup": "CAR @ PHI", "fav": "PHI", "p_fav": 0.51982, "odds": -118.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "CAR 25 - PHI 14"}
 {"date": "2026-10-18", "week": 6, "matchup": "NO @ NYG", "fav": "NO", "p_fav": 0.50891, "odds": -112.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "NO 34 - NYG 27"}
+{"date": "2026-10-18", "week": 6, "matchup": "ARI @ LAR", "fav": "LAR", "p_fav": 0.87005, "odds": -950.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "ARI 18 - LAR 16"}
