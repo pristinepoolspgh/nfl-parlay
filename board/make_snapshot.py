@@ -508,6 +508,9 @@ def build_snapshot():
     status_by_name = {_norm_name(r["name"]): r["status"]
                       for rows in inj_by_team.values() for r in rows}
     starters, qb_team = fetch_qb_starters(datetime.utcnow().year)
+    # Last season's starter per team: a returning established starter
+    # (Caleb Williams after Bagent filled in) is not a downgrade.
+    last_starters, _ = fetch_qb_starters(datetime.utcnow().year - 1)
     # FanDuel's passing props imply who actually starts — the book
     # prices the real QB before injury reports catch up, and it also
     # catches benchings the report never lists.
@@ -562,13 +565,12 @@ def build_snapshot():
                 return QB_DOCK
         implied = implied_qbs.get(mu, set())
         mine = {q for q in implied if qb_team.get(q) == team}
-        # A priced QB who is himself on the injury report (Questionable)
-        # is the real starter coming back, not a downgrade: Caleb
+        # A priced QB who led this team in attempts last season is the
+        # established starter coming back, not a downgrade: Caleb
         # Williams returning after Bagent out-threw him in his absence.
-        returning = {_norm_name(r["name"]) for r in inj_by_team.get(team, [])
-                     if r["pos"] == "QB"
-                     and r["status"] not in ("Out", "Doubtful")}
-        if mine & returning:
+        # (The injury report can't tell us: he drops off it once active.)
+        last = last_starters.get(team)
+        if last and _norm_name(last) in mine:
             return 0.0
         if mine and _norm_name(qb) not in mine:
             return QB_DOCK
