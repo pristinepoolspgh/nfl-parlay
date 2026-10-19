@@ -7,4 +7,4 @@
 {"date": "2026-10-11", "matchup": "CLE @ NYJ", "week": 5, "dog": "CLE", "p_mkt": 0.45726, "p_sim": 0.5619, "odds": 110.0, "won": false}
 {"date": "2026-10-18", "matchup": "BAL @ CLE", "week": 6, "dog": "CLE", "p_mkt": 0.33402, "p_sim": 0.5583, "odds": 188.0, "won": true}
 {"date": "2026-10-18", "matchup": "NO @ NYG", "week": 6, "dog": "NYG", "p_mkt": 0.49109, "p_sim": 0.6296, "odds": -104.0, "won": false}
-{"date": "2026-10-18", "matchup": "DAL @ GB", "week": 6, "dog": "GB", "p_mkt": 0.5, "p_sim": 0.6277, "odds": -108.0}
+{"date": "2026-10-18", "matchup": "DAL @ GB", "week": 6, "dog": "GB", "p_mkt": 0.5, "p_sim": 0.6277, "odds": -108.0, "won": true}

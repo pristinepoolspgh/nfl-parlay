@@ -69,3 +69,6 @@
 {"date": "2026-10-18", "week": 6, "matchup": "CAR @ PHI", "fav": "PHI", "p_fav": 0.51982, "odds": -118.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "CAR 25 - PHI 14"}
 {"date": "2026-10-18", "week": 6, "matchup": "NO @ NYG", "fav": "NO", "p_fav": 0.50891, "odds": -112.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "NO 34 - NYG 27"}
 {"date": "2026-10-18", "week": 6, "matchup": "ARI @ LAR", "fav": "LAR", "p_fav": 0.87005, "odds": -950.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "ARI 18 - LAR 16"}
+{"date": "2026-10-18", "week": 6, "matchup": "LAC @ KC", "fav": "KC", "p_fav": 0.79073, "odds": -460.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "LAC 6 - KC 22"}
+{"date": "2026-10-18", "week": 6, "matchup": "BUF @ LV", "fav": "BUF", "p_fav": 0.70443, "odds": -275.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "BUF 33 - LV 30"}
+{"date": "2026-10-18", "week": 6, "matchup": "DAL @ GB", "fav": "GB", "p_fav": 0.50445, "odds": -110.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "DAL 13 - GB 23"}
