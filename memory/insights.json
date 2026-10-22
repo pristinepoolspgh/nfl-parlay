@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-20T13:02Z",
+ "updated": "2026-10-22T23:12Z",
  "games": 75,
  "predicted": 0.6534,
  "actual": 0.6,
@@ -147,26 +147,12 @@
   }
  },
  "upset_calls": {
-  "calls": 10,
+  "calls": 12,
   "graded": 9,
   "won": 6,
   "implied": 0.4318,
   "net_per_100": 482.59,
   "recent": [
-   {
-    "week": 4,
-    "matchup": "ARI @ NYG",
-    "dog": "NYG",
-    "odds": 106.0,
-    "won": true
-   },
-   {
-    "week": 4,
-    "matchup": "GB @ TB",
-    "dog": "TB",
-    "odds": 150.0,
-    "won": false
-   },
    {
     "week": 5,
     "matchup": "NYG @ WSH",
@@ -208,6 +194,20 @@
     "dog": "GB",
     "odds": -108.0,
     "won": true
+   },
+   {
+    "week": 7,
+    "matchup": "DAL @ PHI",
+    "dog": "PHI",
+    "odds": 188.0,
+    "won": null
+   },
+   {
+    "week": 7,
+    "matchup": "NE @ CHI",
+    "dog": "NE",
+    "odds": 132.0,
+    "won": null
    }
   ]
  },
