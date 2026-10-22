@@ -804,6 +804,11 @@ def build_snapshot():
     for g in games:
         if "rr" not in g or g.get("explained"):
             continue
+        # No call until both passers are priced: before props post
+        # (early week), a starter on IR is invisible to the QB check
+        # and the old model rates a team he won't play for.
+        if len(implied_qbs.get(g["matchup"], ())) < 2:
+            continue
         fav, dog = g["sides"]
         p_dog_sim = round(1.0 - g["rr"], 4)
         if p_dog_sim >= UPSET_MIN and p_dog_sim - dog["p"] >= UPSET_GAP:
