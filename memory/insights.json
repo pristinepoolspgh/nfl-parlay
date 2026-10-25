@@ -1,27 +1,27 @@
 {
- "updated": "2026-10-25T19:06Z",
- "games": 77,
- "predicted": 0.652,
- "actual": 0.6104,
- "summary": "77 favorites graded: market said 65.2%, they actually won 61.0%.",
+ "updated": "2026-10-25T21:06Z",
+ "games": 84,
+ "predicted": 0.6517,
+ "actual": 0.5833,
+ "summary": "84 favorites graded: market said 65.2%, they actually won 58.3%.",
  "buckets": [
   {
    "range": "50-60%",
-   "n": 31,
-   "predicted": 0.5578,
-   "actual": 0.4839
+   "n": 33,
+   "predicted": 0.5572,
+   "actual": 0.4848
   },
   {
    "range": "60-70%",
-   "n": 20,
-   "predicted": 0.6464,
-   "actual": 0.7
+   "n": 23,
+   "predicted": 0.6462,
+   "actual": 0.6087
   },
   {
    "range": "70-80%",
-   "n": 19,
-   "predicted": 0.7447,
-   "actual": 0.6842
+   "n": 21,
+   "predicted": 0.7457,
+   "actual": 0.6667
   },
   {
    "range": "80-90%",
@@ -50,6 +50,13 @@
    "fav": "DAL",
    "p_fav": 0.80165,
    "score": "TB 24 - DAL 16"
+  },
+  {
+   "week": 7,
+   "matchup": "NYG @ HOU",
+   "fav": "HOU",
+   "p_fav": 0.79549,
+   "score": "NYG 27 - HOU 21"
   },
   {
    "week": 2,
@@ -101,33 +108,26 @@
    "score": "NE 29 - BUF 26"
   },
   {
+   "week": 7,
+   "matchup": "MIA @ NYJ",
+   "fav": "NYJ",
+   "p_fav": 0.68539,
+   "score": "MIA 28 - NYJ 25"
+  },
+  {
    "week": 6,
    "matchup": "BAL @ CLE",
    "fav": "BAL",
    "p_fav": 0.66598,
    "score": "BAL 10 - CLE 13"
-  },
-  {
-   "week": 2,
-   "matchup": "MIN @ CHI",
-   "fav": "CHI",
-   "p_fav": 0.661,
-   "score": "MIN 9 - CHI 3"
-  },
-  {
-   "week": 2,
-   "matchup": "PHI @ CHI",
-   "fav": "PHI",
-   "p_fav": 0.63865,
-   "score": "PHI 7 - CHI 27"
   }
  ],
  "sim": {
-  "n": 79,
-  "winner_acc": 0.6154,
-  "margin_mae": 7.78,
-  "total_mae": 10.71,
-  "brier": 0.2247,
+  "n": 86,
+  "winner_acc": 0.5882,
+  "margin_mae": 8.26,
+  "total_mae": 10.56,
+  "brier": 0.2342,
   "by_version": {
    "1": {
     "n": 16,
@@ -140,9 +140,9 @@
     "brier": 0.2069
    },
    "7": {
-    "n": 47,
-    "margin_mae": 8.04,
-    "brier": 0.2289
+    "n": 54,
+    "margin_mae": 8.77,
+    "brier": 0.2435
    }
   }
  },

@@ -75,3 +75,10 @@
 {"date": "2026-10-19", "week": 6, "matchup": "WSH @ SF", "fav": "SF", "p_fav": 0.77644, "odds": -420.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "WSH 17 - SF 23"}
 {"date": "2026-10-22", "week": 7, "matchup": "NE @ CHI", "fav": "CHI", "p_fav": 0.58571, "odds": -156.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "NE 24 - CHI 30"}
 {"date": "2026-10-25", "week": 7, "matchup": "PIT @ NO", "fav": "PIT", "p_fav": 0.60971, "odds": -174.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "PIT 16 - NO 10"}
+{"date": "2026-10-25", "week": 7, "matchup": "NYG @ HOU", "fav": "HOU", "p_fav": 0.79549, "odds": -480.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "NYG 27 - HOU 21"}
+{"date": "2026-10-25", "week": 7, "matchup": "IND @ MIN", "fav": "MIN", "p_fav": 0.71355, "odds": -290.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "IND 10 - MIN 16"}
+{"date": "2026-10-25", "week": 7, "matchup": "MIA @ NYJ", "fav": "NYJ", "p_fav": 0.68539, "odds": -250.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "MIA 28 - NYJ 25"}
+{"date": "2026-10-25", "week": 7, "matchup": "SF @ ATL", "fav": "SF", "p_fav": 0.6301, "odds": -190.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "SF 20 - ATL 29"}
+{"date": "2026-10-25", "week": 7, "matchup": "TB @ CAR", "fav": "CAR", "p_fav": 0.61832, "odds": -180.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "TB 43 - CAR 13"}
+{"date": "2026-10-25", "week": 7, "matchup": "CIN @ BAL", "fav": "BAL", "p_fav": 0.57071, "odds": -146.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "CIN 35 - BAL 13"}
+{"date": "2026-10-25", "week": 7, "matchup": "CLE @ TEN", "fav": "CLE", "p_fav": 0.52422, "odds": -120.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "CLE 27 - TEN 24"}
