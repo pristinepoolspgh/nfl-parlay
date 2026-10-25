@@ -1,15 +1,15 @@
 {
- "updated": "2026-10-22T23:12Z",
- "games": 75,
- "predicted": 0.6534,
- "actual": 0.6,
- "summary": "75 favorites graded: market said 65.3%, they actually won 60.0%.",
+ "updated": "2026-10-25T15:07Z",
+ "games": 76,
+ "predicted": 0.6525,
+ "actual": 0.6053,
+ "summary": "76 favorites graded: market said 65.3%, they actually won 60.5%.",
  "buckets": [
   {
    "range": "50-60%",
-   "n": 30,
-   "predicted": 0.5569,
-   "actual": 0.4667
+   "n": 31,
+   "predicted": 0.5578,
+   "actual": 0.4839
   },
   {
    "range": "60-70%",
@@ -123,11 +123,11 @@
   }
  ],
  "sim": {
-  "n": 77,
-  "winner_acc": 0.6053,
-  "margin_mae": 7.91,
-  "total_mae": 10.7,
-  "brier": 0.2261,
+  "n": 78,
+  "winner_acc": 0.6104,
+  "margin_mae": 7.84,
+  "total_mae": 10.61,
+  "brier": 0.2255,
   "by_version": {
    "1": {
     "n": 16,
@@ -140,19 +140,26 @@
     "brier": 0.2069
    },
    "7": {
-    "n": 45,
-    "margin_mae": 8.27,
-    "brier": 0.2314
+    "n": 46,
+    "margin_mae": 8.15,
+    "brier": 0.2302
    }
   }
  },
  "upset_calls": {
-  "calls": 12,
-  "graded": 9,
+  "calls": 11,
+  "graded": 10,
   "won": 6,
-  "implied": 0.4318,
-  "net_per_100": 482.59,
+  "implied": 0.4301,
+  "net_per_100": 382.59,
   "recent": [
+   {
+    "week": 4,
+    "matchup": "GB @ TB",
+    "dog": "TB",
+    "odds": 150.0,
+    "won": false
+   },
    {
     "week": 5,
     "matchup": "NYG @ WSH",
@@ -197,17 +204,10 @@
    },
    {
     "week": 7,
-    "matchup": "DAL @ PHI",
-    "dog": "PHI",
-    "odds": 188.0,
-    "won": null
-   },
-   {
-    "week": 7,
     "matchup": "NE @ CHI",
     "dog": "NE",
     "odds": 132.0,
-    "won": null
+    "won": false
    }
   ]
  },
@@ -215,7 +215,15 @@
  "leans": {
   "won": 2,
   "lost": 2,
-  "pending": 0,
-  "recent": []
+  "pending": 1,
+  "recent": [
+   {
+    "week": 7,
+    "desc": "SEA ML",
+    "matchup": "KC @ SEA",
+    "p_market": 0.5818,
+    "result": "pending"
+   }
+  ]
  }
 }
