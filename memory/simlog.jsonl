@@ -84,8 +84,8 @@
 {"date": "2026-10-25", "matchup": "TB @ CAR", "week": 7, "mu_margin": 3.5, "mu_total": 44.5, "p_home": 0.5939, "rr_p_home": 0.6692, "rr_margin": 5.78, "rr_total": 46.02, "v": 7, "as_": 43, "hs": 13}
 {"date": "2026-10-25", "matchup": "CIN @ BAL", "week": 7, "mu_margin": 2.5, "mu_total": 51.0, "p_home": 0.5612, "rr_p_home": 0.4713, "rr_margin": -0.95, "rr_total": 46.46, "v": 7, "as_": 35, "hs": 13}
 {"date": "2026-10-25", "matchup": "CLE @ TEN", "week": 7, "mu_margin": -1.5, "mu_total": 38.5, "p_home": 0.4479, "rr_p_home": 0.4066, "rr_margin": -3.12, "rr_total": 40.94, "v": 7, "as_": 27, "hs": 24}
-{"date": "2026-10-25", "matchup": "DEN @ ARI", "week": 7, "mu_margin": -4.5, "mu_total": 43.5, "p_home": 0.3544, "rr_p_home": 0.3183, "rr_margin": -6.24, "rr_total": 45.62, "v": 7}
-{"date": "2026-10-25", "matchup": "LAR @ LV", "week": 7, "mu_margin": -4.5, "mu_total": 47.0, "p_home": 0.3544, "rr_p_home": 0.4179, "rr_margin": -2.74, "rr_total": 47.32, "v": 7}
-{"date": "2026-10-25", "matchup": "GB @ DET", "week": 7, "mu_margin": 3.0, "mu_total": 53.5, "p_home": 0.5784, "rr_p_home": 0.5665, "rr_margin": 2.21, "rr_total": 49.17, "v": 7}
-{"date": "2026-10-25", "matchup": "KC @ SEA", "week": 7, "mu_margin": 2.5, "mu_total": 42.0, "p_home": 0.5612, "rr_p_home": 0.6644, "rr_margin": 5.6, "rr_total": 44.58, "v": 7}
+{"date": "2026-10-25", "matchup": "DEN @ ARI", "week": 7, "mu_margin": -4.5, "mu_total": 43.5, "p_home": 0.3544, "rr_p_home": 0.3183, "rr_margin": -6.24, "rr_total": 45.62, "v": 7, "as_": 30, "hs": 16}
+{"date": "2026-10-25", "matchup": "LAR @ LV", "week": 7, "mu_margin": -4.5, "mu_total": 47.0, "p_home": 0.3544, "rr_p_home": 0.4179, "rr_margin": -2.74, "rr_total": 47.32, "v": 7, "as_": 35, "hs": 21}
+{"date": "2026-10-25", "matchup": "GB @ DET", "week": 7, "mu_margin": 3.0, "mu_total": 53.5, "p_home": 0.5784, "rr_p_home": 0.5665, "rr_margin": 2.21, "rr_total": 49.17, "v": 7, "as_": 17, "hs": 20}
+{"date": "2026-10-25", "matchup": "KC @ SEA", "week": 7, "mu_margin": 2.5, "mu_total": 42.0, "p_home": 0.5612, "rr_p_home": 0.6644, "rr_margin": 5.6, "rr_total": 44.58, "v": 7, "as_": 3, "hs": 20}
 {"date": "2026-10-26", "matchup": "DAL @ PHI", "week": 7, "mu_margin": -4.5, "mu_total": 44.5, "p_home": 0.3544, "rr_p_home": 0.5911, "rr_margin": 3.04, "rr_total": 47.36, "v": 7}

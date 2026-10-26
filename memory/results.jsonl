@@ -82,3 +82,7 @@
 {"date": "2026-10-25", "week": 7, "matchup": "TB @ CAR", "fav": "CAR", "p_fav": 0.61832, "odds": -180.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "TB 43 - CAR 13"}
 {"date": "2026-10-25", "week": 7, "matchup": "CIN @ BAL", "fav": "BAL", "p_fav": 0.57071, "odds": -146.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "CIN 35 - BAL 13"}
 {"date": "2026-10-25", "week": 7, "matchup": "CLE @ TEN", "fav": "CLE", "p_fav": 0.52422, "odds": -120.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "CLE 27 - TEN 24"}
+{"date": "2026-10-25", "week": 7, "matchup": "DEN @ ARI", "fav": "DEN", "p_fav": 0.67779, "odds": -240.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "DEN 30 - ARI 16"}
+{"date": "2026-10-25", "week": 7, "matchup": "LAR @ LV", "fav": "LAR", "p_fav": 0.65479, "odds": -210.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "LAR 35 - LV 21"}
+{"date": "2026-10-25", "week": 7, "matchup": "GB @ DET", "fav": "DET", "p_fav": 0.59653, "odds": -164.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "GB 17 - DET 20"}
+{"date": "2026-10-25", "week": 7, "matchup": "KC @ SEA", "fav": "SEA", "p_fav": 0.55066, "odds": -134.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "KC 3 - SEA 20"}
