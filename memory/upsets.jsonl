@@ -10,3 +10,4 @@
 {"date": "2026-10-18", "matchup": "DAL @ GB", "week": 6, "dog": "GB", "p_mkt": 0.5, "p_sim": 0.6277, "odds": -108.0, "won": true}
 {"date": "2026-10-22", "matchup": "NE @ CHI", "week": 7, "dog": "NE", "p_mkt": 0.41429, "p_sim": 0.5306, "odds": 132.0, "won": false}
 {"date": "2026-11-01", "matchup": "MIN @ DET", "week": 8, "dog": "MIN", "p_mkt": 0.39325, "p_sim": 0.538, "odds": 144.0}
+{"date": "2026-11-01", "matchup": "KC @ DEN", "week": 8, "dog": "DEN", "p_mkt": 0.48018, "p_sim": 0.6407, "odds": 100.0}
