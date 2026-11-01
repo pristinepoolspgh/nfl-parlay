@@ -88,3 +88,6 @@
 {"date": "2026-10-25", "week": 7, "matchup": "KC @ SEA", "fav": "SEA", "p_fav": 0.55066, "odds": -134.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "KC 3 - SEA 20"}
 {"date": "2026-10-26", "week": 7, "matchup": "DAL @ PHI", "fav": "DAL", "p_fav": 0.66598, "odds": -225.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "DAL 38 - PHI 21"}
 {"date": "2026-10-29", "week": 8, "matchup": "CAR @ GB", "fav": "GB", "p_fav": 0.6301, "odds": -190.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "CAR 19 - GB 27"}
+{"date": "2026-11-01", "week": 8, "matchup": "IND @ JAX", "fav": "JAX", "p_fav": 0.77644, "odds": -420.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "IND 7 - JAX 42"}
+{"date": "2026-11-01", "week": 8, "matchup": "ATL @ TB", "fav": "TB", "p_fav": 0.55066, "odds": -134.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "ATL 0 - TB 16"}
+{"date": "2026-11-01", "week": 8, "matchup": "LV @ NYJ", "fav": "LV", "p_fav": 0.5, "odds": -108.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "LV 38 - NYJ 33"}
