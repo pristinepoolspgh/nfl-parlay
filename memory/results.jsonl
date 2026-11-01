@@ -91,3 +91,8 @@
 {"date": "2026-11-01", "week": 8, "matchup": "IND @ JAX", "fav": "JAX", "p_fav": 0.77644, "odds": -420.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "IND 7 - JAX 42"}
 {"date": "2026-11-01", "week": 8, "matchup": "ATL @ TB", "fav": "TB", "p_fav": 0.55066, "odds": -134.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "ATL 0 - TB 16"}
 {"date": "2026-11-01", "week": 8, "matchup": "LV @ NYJ", "fav": "LV", "p_fav": 0.5, "odds": -108.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "LV 38 - NYJ 33"}
+{"date": "2026-11-01", "week": 8, "matchup": "TEN @ CIN", "fav": "CIN", "p_fav": 0.83407, "odds": -650.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "TEN 36 - CIN 43"}
+{"date": "2026-11-01", "week": 8, "matchup": "ARI @ DAL", "fav": "DAL", "p_fav": 0.72125, "odds": -300.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "ARI 33 - DAL 30"}
+{"date": "2026-11-01", "week": 8, "matchup": "CLE @ PIT", "fav": "PIT", "p_fav": 0.63865, "odds": -198.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "CLE 6 - PIT 27"}
+{"date": "2026-11-01", "week": 8, "matchup": "BAL @ BUF", "fav": "BUF", "p_fav": 0.61832, "odds": -180.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "BAL 10 - BUF 36"}
+{"date": "2026-11-01", "week": 8, "matchup": "MIN @ DET", "fav": "DET", "p_fav": 0.60675, "odds": -172.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "MIN 15 - DET 19"}
