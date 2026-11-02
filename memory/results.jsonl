@@ -96,3 +96,7 @@
 {"date": "2026-11-01", "week": 8, "matchup": "CLE @ PIT", "fav": "PIT", "p_fav": 0.63865, "odds": -198.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "CLE 6 - PIT 27"}
 {"date": "2026-11-01", "week": 8, "matchup": "BAL @ BUF", "fav": "BUF", "p_fav": 0.61832, "odds": -180.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "BAL 10 - BUF 36"}
 {"date": "2026-11-01", "week": 8, "matchup": "MIN @ DET", "fav": "DET", "p_fav": 0.60675, "odds": -172.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "MIN 15 - DET 19"}
+{"date": "2026-11-01", "week": 8, "matchup": "LAC @ LAR", "fav": "LAR", "p_fav": 0.71355, "odds": -290.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "LAC 9 - LAR 24"}
+{"date": "2026-11-01", "week": 8, "matchup": "NE @ MIA", "fav": "NE", "p_fav": 0.75667, "odds": -370.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "NE 24 - MIA 19"}
+{"date": "2026-11-01", "week": 8, "matchup": "KC @ DEN", "fav": "KC", "p_fav": 0.52422, "odds": -120.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "KC 24 - DEN 28"}
+{"date": "2026-11-01", "week": 8, "matchup": "PHI @ WSH", "fav": "WSH", "p_fav": 0.64642, "odds": -205.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "PHI 10 - WSH 27"}

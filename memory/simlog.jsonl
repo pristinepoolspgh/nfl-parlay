@@ -98,8 +98,8 @@
 {"date": "2026-11-01", "matchup": "MIN @ DET", "week": 8, "mu_margin": 3.5, "mu_total": 46.0, "p_home": 0.5939, "rr_p_home": 0.462, "rr_margin": -1.26, "rr_total": 45.95, "v": 7, "as_": 15, "hs": 19}
 {"date": "2026-11-01", "matchup": "ATL @ TB", "week": 8, "mu_margin": 2.5, "mu_total": 45.5, "p_home": 0.5612, "rr_p_home": 0.522, "rr_margin": 0.73, "rr_total": 46.21, "v": 7, "as_": 0, "hs": 16}
 {"date": "2026-11-01", "matchup": "LV @ NYJ", "week": 8, "mu_margin": 0.0, "mu_total": 45.5, "p_home": 0.4773, "rr_p_home": 0.5132, "rr_margin": 0.44, "rr_total": 45.81, "v": 7, "as_": 38, "hs": 33}
-{"date": "2026-11-01", "matchup": "LAC @ LAR", "week": 8, "mu_margin": 6.5, "mu_total": 44.0, "p_home": 0.708, "rr_p_home": 0.7431, "rr_margin": 8.62, "rr_total": 45.0, "v": 7}
-{"date": "2026-11-01", "matchup": "NE @ MIA", "week": 8, "mu_margin": -7.5, "mu_total": 44.5, "p_home": 0.244, "rr_p_home": 0.2988, "rr_margin": -6.97, "rr_total": 44.41, "v": 7}
-{"date": "2026-11-01", "matchup": "KC @ DEN", "week": 8, "mu_margin": -1.5, "mu_total": 40.0, "p_home": 0.4479, "rr_p_home": 0.6407, "rr_margin": 4.76, "rr_total": 42.27, "v": 7}
-{"date": "2026-11-01", "matchup": "PHI @ WSH", "week": 8, "mu_margin": 4.0, "mu_total": 40.5, "p_home": 0.6092, "rr_p_home": 0.5333, "rr_margin": 1.1, "rr_total": 45.81, "v": 7}
+{"date": "2026-11-01", "matchup": "LAC @ LAR", "week": 8, "mu_margin": 6.5, "mu_total": 44.0, "p_home": 0.708, "rr_p_home": 0.7431, "rr_margin": 8.62, "rr_total": 45.0, "v": 7, "as_": 9, "hs": 24}
+{"date": "2026-11-01", "matchup": "NE @ MIA", "week": 8, "mu_margin": -7.5, "mu_total": 44.5, "p_home": 0.244, "rr_p_home": 0.2988, "rr_margin": -6.97, "rr_total": 44.41, "v": 7, "as_": 24, "hs": 19}
+{"date": "2026-11-01", "matchup": "KC @ DEN", "week": 8, "mu_margin": -1.5, "mu_total": 40.0, "p_home": 0.4479, "rr_p_home": 0.6407, "rr_margin": 4.76, "rr_total": 42.27, "v": 7, "as_": 24, "hs": 28}
+{"date": "2026-11-01", "matchup": "PHI @ WSH", "week": 8, "mu_margin": 4.0, "mu_total": 40.5, "p_home": 0.6092, "rr_p_home": 0.5333, "rr_margin": 1.1, "rr_total": 45.81, "v": 7, "as_": 10, "hs": 27}
 {"date": "2026-11-02", "matchup": "CHI @ SEA", "week": 8, "mu_margin": 3.0, "mu_total": 46.5, "p_home": 0.5784, "rr_p_home": 0.663, "rr_margin": 5.55, "rr_total": 45.98, "v": 7}
