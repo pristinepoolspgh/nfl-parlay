@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-03T13:09Z",
+ "updated": "2026-11-05T23:12Z",
  "games": 103,
  "predicted": 0.6506,
  "actual": 0.6311,
@@ -147,19 +147,12 @@
   }
  },
  "upset_calls": {
-  "calls": 13,
+  "calls": 14,
   "graded": 12,
   "won": 7,
   "implied": 0.4312,
   "net_per_100": 382.59,
   "recent": [
-   {
-    "week": 5,
-    "matchup": "CHI @ GB",
-    "dog": "GB",
-    "odds": 124.0,
-    "won": true
-   },
    {
     "week": 5,
     "matchup": "CLE @ NYJ",
@@ -208,6 +201,13 @@
     "dog": "DEN",
     "odds": 100.0,
     "won": true
+   },
+   {
+    "week": 9,
+    "matchup": "DAL @ IND",
+    "dog": "IND",
+    "odds": 215.0,
+    "won": null
    }
   ]
  },
