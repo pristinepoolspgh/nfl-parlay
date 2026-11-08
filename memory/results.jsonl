@@ -103,3 +103,4 @@
 {"date": "2026-11-02", "week": 8, "matchup": "CHI @ SEA", "fav": "SEA", "p_fav": 0.61262, "odds": -176.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "CHI 34 - SEA 17"}
 {"date": "2026-11-05", "week": 9, "matchup": "JAX @ BAL", "fav": "JAX", "p_fav": 0.80165, "odds": -500.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "JAX 33 - BAL 10"}
 {"date": "2026-11-08", "week": 9, "matchup": "CIN @ ATL", "fav": "CIN", "p_fav": 0.59337, "odds": -162.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "CIN 34 - ATL 17"}
+{"date": "2026-11-08", "week": 9, "matchup": "DET @ MIA", "fav": "DET", "p_fav": 0.74468, "odds": -350.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "DET 19 - MIA 9"}
