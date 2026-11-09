@@ -110,3 +110,8 @@
 {"date": "2026-11-08", "week": 9, "matchup": "NYG @ PHI", "fav": "NYG", "p_fav": 0.61549, "odds": -178.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "NYG 19 - PHI 11"}
 {"date": "2026-11-08", "week": 9, "matchup": "DEN @ CAR", "fav": "DEN", "p_fav": 0.58237, "odds": -154.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "DEN 26 - CAR 21"}
 {"date": "2026-11-08", "week": 9, "matchup": "CLE @ NO", "fav": "NO", "p_fav": 0.56713, "odds": -144.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "CLE 22 - NO 23"}
+{"date": "2026-11-08", "week": 9, "matchup": "LV @ SF", "fav": "SF", "p_fav": 0.82198, "odds": -590.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "LV 17 - SF 38"}
+{"date": "2026-11-08", "week": 9, "matchup": "HOU @ LAC", "fav": "HOU", "p_fav": 0.66598, "odds": -225.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "HOU 44 - LAC 22"}
+{"date": "2026-11-08", "week": 9, "matchup": "ARI @ SEA", "fav": "SEA", "p_fav": 0.83407, "odds": -650.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "ARI 3 - SEA 17"}
+{"date": "2026-11-08", "week": 9, "matchup": "GB @ NE", "fav": "NE", "p_fav": 0.57899, "odds": -152.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "GB 45 - NE 27"}
+{"date": "2026-11-08", "week": 9, "matchup": "TB @ CHI", "fav": "CHI", "p_fav": 0.71745, "odds": -295.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "TB 24 - CHI 27"}
