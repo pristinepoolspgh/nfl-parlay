@@ -115,3 +115,4 @@
 {"date": "2026-11-08", "week": 9, "matchup": "ARI @ SEA", "fav": "SEA", "p_fav": 0.83407, "odds": -650.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "ARI 3 - SEA 17"}
 {"date": "2026-11-08", "week": 9, "matchup": "GB @ NE", "fav": "NE", "p_fav": 0.57899, "odds": -152.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "GB 45 - NE 27"}
 {"date": "2026-11-08", "week": 9, "matchup": "TB @ CHI", "fav": "CHI", "p_fav": 0.71745, "odds": -295.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "TB 24 - CHI 27"}
+{"date": "2026-11-09", "week": 9, "matchup": "BUF @ MIN", "fav": "BUF", "p_fav": 0.60675, "odds": -172.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "BUF 23 - MIN 6"}

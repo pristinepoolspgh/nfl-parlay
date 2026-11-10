@@ -1,9 +1,9 @@
 {
- "updated": "2026-11-09T23:11Z",
- "games": 117,
- "predicted": 0.6558,
- "actual": 0.6667,
- "summary": "117 favorites graded: market said 65.6%, they actually won 66.7%.",
+ "updated": "2026-11-10T13:08Z",
+ "games": 118,
+ "predicted": 0.6554,
+ "actual": 0.6695,
+ "summary": "118 favorites graded: market said 65.5%, they actually won 66.9%.",
  "buckets": [
   {
    "range": "50-60%",
@@ -13,9 +13,9 @@
   },
   {
    "range": "60-70%",
-   "n": 36,
-   "predicted": 0.6467,
-   "actual": 0.7222
+   "n": 37,
+   "predicted": 0.6456,
+   "actual": 0.7297
   },
   {
    "range": "70-80%",
@@ -123,11 +123,11 @@
   }
  ],
  "sim": {
-  "n": 119,
-  "winner_acc": 0.6695,
-  "margin_mae": 8.6,
-  "total_mae": 10.64,
-  "brier": 0.2112,
+  "n": 120,
+  "winner_acc": 0.6723,
+  "margin_mae": 8.64,
+  "total_mae": 10.69,
+  "brier": 0.2108,
   "by_version": {
    "1": {
     "n": 16,
@@ -140,9 +140,9 @@
     "brier": 0.2069
    },
    "7": {
-    "n": 87,
-    "margin_mae": 9.04,
-    "brier": 0.2084
+    "n": 88,
+    "margin_mae": 9.1,
+    "brier": 0.2079
    }
   }
  },
@@ -214,15 +214,15 @@
  "crew": null,
  "leans": {
   "won": 3,
-  "lost": 2,
-  "pending": 1,
+  "lost": 3,
+  "pending": 0,
   "recent": [
    {
     "week": 9,
     "desc": "MIN ML",
     "matchup": "BUF @ MIN",
     "p_market": 0.3903,
-    "result": "pending"
+    "result": "lost"
    }
   ]
  }
