@@ -119,3 +119,9 @@
 {"date": "2026-11-12", "week": 10, "matchup": "WSH @ NYG", "fav": "NYG", "p_fav": 0.53696, "odds": -126.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "WSH 24 - NYG 21"}
 {"date": "2026-11-15", "week": 10, "matchup": "NE @ DET", "fav": "DET", "p_fav": 0.57899, "odds": -152.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "NE 10 - DET 35"}
 {"date": "2026-11-15", "week": 10, "matchup": "MIN @ GB", "fav": "GB", "p_fav": 0.66598, "odds": -225.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "MIN 30 - GB 10"}
+{"date": "2026-11-15", "week": 10, "matchup": "JAX @ TEN", "fav": "JAX", "p_fav": 0.81923, "odds": -590.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "JAX 40 - TEN 23"}
+{"date": "2026-11-15", "week": 10, "matchup": "BUF @ NYJ", "fav": "BUF", "p_fav": 0.79073, "odds": -460.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "BUF 31 - NYJ 12"}
+{"date": "2026-11-15", "week": 10, "matchup": "HOU @ CLE", "fav": "HOU", "p_fav": 0.67346, "odds": -235.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "HOU 24 - CLE 27"}
+{"date": "2026-11-15", "week": 10, "matchup": "KC @ ATL", "fav": "KC", "p_fav": 0.61549, "odds": -178.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "KC 35 - ATL 13"}
+{"date": "2026-11-15", "week": 10, "matchup": "MIA @ IND", "fav": "IND", "p_fav": 0.55452, "odds": -136.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "MIA 22 - IND 24"}
+{"date": "2026-11-15", "week": 10, "matchup": "CAR @ NO", "fav": "NO", "p_fav": 0.50891, "odds": -112.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "CAR 20 - NO 17"}
