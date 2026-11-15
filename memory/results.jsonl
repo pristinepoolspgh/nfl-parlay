@@ -118,3 +118,4 @@
 {"date": "2026-11-09", "week": 9, "matchup": "BUF @ MIN", "fav": "BUF", "p_fav": 0.60675, "odds": -172.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "BUF 23 - MIN 6"}
 {"date": "2026-11-12", "week": 10, "matchup": "WSH @ NYG", "fav": "NYG", "p_fav": 0.53696, "odds": -126.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "WSH 24 - NYG 21"}
 {"date": "2026-11-15", "week": 10, "matchup": "NE @ DET", "fav": "DET", "p_fav": 0.57899, "odds": -152.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "NE 10 - DET 35"}
+{"date": "2026-11-15", "week": 10, "matchup": "MIN @ GB", "fav": "GB", "p_fav": 0.66598, "odds": -225.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "MIN 30 - GB 10"}
