@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-17T13:04Z",
+ "updated": "2026-11-19T23:10Z",
  "games": 132,
  "predicted": 0.6549,
  "actual": 0.6667,
@@ -216,14 +216,6 @@
   "won": 3,
   "lost": 3,
   "pending": 0,
-  "recent": [
-   {
-    "week": 9,
-    "desc": "MIN ML",
-    "matchup": "BUF @ MIN",
-    "p_market": 0.3903,
-    "result": "lost"
-   }
-  ]
+  "recent": []
  }
 }
