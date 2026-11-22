@@ -130,3 +130,4 @@
 {"date": "2026-11-15", "week": 10, "matchup": "SF @ DAL", "fav": "SF", "p_fav": 0.65649, "odds": -215.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "SF 46 - DAL 40"}
 {"date": "2026-11-15", "week": 10, "matchup": "PIT @ CIN", "fav": "CIN", "p_fav": 0.63865, "odds": -198.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "PIT 18 - CIN 38"}
 {"date": "2026-11-16", "week": 10, "matchup": "LAC @ BAL", "fav": "BAL", "p_fav": 0.67346, "odds": -235.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "LAC 23 - BAL 20"}
+{"date": "2026-11-19", "week": 11, "matchup": "IND @ HOU", "fav": "HOU", "p_fav": 0.84753, "odds": -750.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "IND 3 - HOU 26"}
