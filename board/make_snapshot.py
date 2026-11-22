@@ -257,18 +257,35 @@ def fetch_weather(home_team, start_et):
     lat, lon, roof = stad
     if roof == "dome":
         return {"roof": "dome"}
+    key = f"{home_team} {start_et[:13]}"
+    cache_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              "..", "memory", "wx_cache.json")
+    try:
+        cache = json.load(open(cache_path))
+    except Exception:
+        cache = {}
     try:
         d = curl_json(WX_URL.format(lat=lat, lon=lon))
         h = d["hourly"]
         want = start_et[:13].replace(" ", "T") + ":00"
         i = h["time"].index(want)
-        return {"roof": roof,
-                "temp": round(h["temperature_2m"][i]),
-                "wind": round(h["wind_speed_10m"][i]),
-                "gust": round(h["wind_gusts_10m"][i]),
-                "pop": h["precipitation_probability"][i]}
+        wx = {"roof": roof,
+              "temp": round(h["temperature_2m"][i]),
+              "wind": round(h["wind_speed_10m"][i]),
+              "gust": round(h["wind_gusts_10m"][i]),
+              "pop": h["precipitation_probability"][i]}
+        cache[key] = wx
+        try:
+            # keep only the last ~60 forecasts
+            cache = dict(list(cache.items())[-60:])
+            json.dump(cache, open(cache_path, "w"), indent=0)
+        except Exception:
+            pass
+        return wx
     except Exception:
-        return {"roof": roof}
+        # forecast service down or rate-limited: reuse the last good
+        # forecast for this kickoff rather than silently dropping weather
+        return cache.get(key) or {"roof": roof}
 
 
 def _norm_name(n):
