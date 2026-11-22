@@ -131,3 +131,7 @@
 {"date": "2026-11-15", "week": 10, "matchup": "PIT @ CIN", "fav": "CIN", "p_fav": 0.63865, "odds": -198.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "PIT 18 - CIN 38"}
 {"date": "2026-11-16", "week": 10, "matchup": "LAC @ BAL", "fav": "BAL", "p_fav": 0.67346, "odds": -235.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "LAC 23 - BAL 20"}
 {"date": "2026-11-19", "week": 11, "matchup": "IND @ HOU", "fav": "HOU", "p_fav": 0.84753, "odds": -750.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "IND 3 - HOU 26"}
+{"date": "2026-11-22", "week": 11, "matchup": "MIA @ BUF", "fav": "BUF", "p_fav": 0.91097, "odds": -1800.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "MIA 9 - BUF 26"}
+{"date": "2026-11-22", "week": 11, "matchup": "ARI @ KC", "fav": "KC", "p_fav": 0.89669, "odds": -1400.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "ARI 7 - KC 34"}
+{"date": "2026-11-22", "week": 11, "matchup": "NO @ CHI", "fav": "CHI", "p_fav": 0.83697, "odds": -670.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "NO 13 - CHI 21"}
+{"date": "2026-11-22", "week": 11, "matchup": "TEN @ DAL", "fav": "DAL", "p_fav": 0.78641, "odds": -450.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "TEN 30 - DAL 51"}
