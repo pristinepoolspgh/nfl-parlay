@@ -140,8 +140,8 @@
 {"date": "2026-11-22", "matchup": "TB @ DET", "week": 11, "mu_margin": 6.5, "mu_total": 47.0, "p_home": 0.708, "rr_p_home": 0.6901, "rr_margin": 6.55, "rr_total": 47.31, "v": 7, "as_": 21, "hs": 31}
 {"date": "2026-11-22", "matchup": "PIT @ PHI", "week": 11, "mu_margin": -4.5, "mu_total": 38.5, "p_home": 0.3544, "rr_p_home": 0.352, "rr_margin": -5.02, "rr_total": 43.15, "v": 7, "as_": 16, "hs": 19}
 {"date": "2026-11-22", "matchup": "BAL @ CAR", "week": 11, "mu_margin": 2.5, "mu_total": 43.5, "p_home": 0.5612, "rr_p_home": 0.5693, "rr_margin": 2.3, "rr_total": 47.0, "v": 7, "as_": 33, "hs": 35}
-{"date": "2026-11-22", "matchup": "NYJ @ LAC", "week": 11, "mu_margin": 3.0, "mu_total": 40.5, "p_home": 0.5784, "rr_p_home": 0.6201, "rr_margin": 4.04, "rr_total": 44.18, "v": 7}
-{"date": "2026-11-22", "matchup": "LV @ DEN", "week": 11, "mu_margin": 10.0, "mu_total": 40.0, "p_home": 0.8141, "rr_p_home": 0.7971, "rr_margin": 10.97, "rr_total": 45.64, "v": 7}
-{"date": "2026-11-22", "matchup": "JAX @ NYG", "week": 11, "mu_margin": -6.0, "mu_total": 46.5, "p_home": 0.2671, "rr_p_home": 0.2337, "rr_margin": -9.59, "rr_total": 44.21, "v": 7}
-{"date": "2026-11-22", "matchup": "MIN @ SF", "week": 11, "mu_margin": 3.0, "mu_total": 46.5, "p_home": 0.5784, "rr_p_home": 0.7203, "rr_margin": 7.7, "rr_total": 41.89, "v": 7}
+{"date": "2026-11-22", "matchup": "NYJ @ LAC", "week": 11, "mu_margin": 3.0, "mu_total": 40.5, "p_home": 0.5784, "rr_p_home": 0.6201, "rr_margin": 4.04, "rr_total": 44.18, "v": 7, "as_": 27, "hs": 24}
+{"date": "2026-11-22", "matchup": "LV @ DEN", "week": 11, "mu_margin": 10.0, "mu_total": 40.0, "p_home": 0.8141, "rr_p_home": 0.7971, "rr_margin": 10.97, "rr_total": 45.64, "v": 7, "as_": 24, "hs": 38}
+{"date": "2026-11-22", "matchup": "JAX @ NYG", "week": 11, "mu_margin": -6.0, "mu_total": 46.5, "p_home": 0.2671, "rr_p_home": 0.2337, "rr_margin": -9.59, "rr_total": 44.21, "v": 7, "as_": 18, "hs": 23}
+{"date": "2026-11-22", "matchup": "MIN @ SF", "week": 11, "mu_margin": 3.0, "mu_total": 46.5, "p_home": 0.5784, "rr_p_home": 0.7203, "rr_margin": 7.7, "rr_total": 41.89, "v": 7, "as_": 10, "hs": 35}
 {"date": "2026-11-23", "matchup": "CIN @ WSH", "week": 11, "mu_margin": -6.0, "mu_total": 53.0, "p_home": 0.2671, "rr_p_home": 0.3529, "rr_margin": -4.98, "rr_total": 49.0, "v": 7}
