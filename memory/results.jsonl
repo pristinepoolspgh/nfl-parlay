@@ -142,3 +142,4 @@
 {"date": "2026-11-22", "week": 11, "matchup": "LV @ DEN", "fav": "DEN", "p_fav": 0.81187, "odds": -550.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "LV 24 - DEN 38"}
 {"date": "2026-11-22", "week": 11, "matchup": "JAX @ NYG", "fav": "JAX", "p_fav": 0.68056, "odds": -245.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "JAX 18 - NYG 23"}
 {"date": "2026-11-22", "week": 11, "matchup": "MIN @ SF", "fav": "SF", "p_fav": 0.59653, "odds": -164.0, "source": "fanduel", "fav_won": true, "upset": false, "score": "MIN 10 - SF 35"}
+{"date": "2026-11-23", "week": 11, "matchup": "CIN @ WSH", "fav": "CIN", "p_fav": 0.70859, "odds": -280.0, "source": "fanduel", "fav_won": false, "upset": true, "score": "CIN 20 - WSH 22"}
