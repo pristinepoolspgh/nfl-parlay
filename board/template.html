@@ -1217,7 +1217,7 @@ function wxLine(g){
   if (w.roof === "dome") return `<span class="injline">dome</span>`;
   if (w.temp === undefined)
     return w.roof === "retract" ? `<span class="injline">retractable roof</span>` : "";
-  const wind = w.wind >= 20 ? `<b>wind ${w.wind} (g${w.gust})</b>`
+  const wind = w.wind >= 20 ? `<b>wind ${w.wind}${w.gust != null ? ` (g${w.gust})` : ""}</b>`
     : w.wind >= 15 ? `<i>wind ${w.wind}</i>` : `wind ${w.wind}`;
   const rain = w.pop >= 50 ? ` · <i>rain ${w.pop}%</i>`
     : w.pop >= 25 ? ` · rain ${w.pop}%` : "";

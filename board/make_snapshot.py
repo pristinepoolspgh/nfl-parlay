@@ -283,9 +283,50 @@ def fetch_weather(home_team, start_et):
             pass
         return wx
     except Exception:
-        # forecast service down or rate-limited: reuse the last good
-        # forecast for this kickoff rather than silently dropping weather
-        return cache.get(key) or {"roof": roof}
+        pass
+    # Open-Meteo down or over its daily limit: try the National Weather
+    # Service (keyless, US only). Its hourly feed has no gusts.
+    wx = _nws_weather(lat, lon, roof, start_et)
+    if wx:
+        cache[key] = wx
+        try:
+            cache = dict(list(cache.items())[-60:])
+            json.dump(cache, open(cache_path, "w"), indent=0)
+        except Exception:
+            pass
+        return wx
+    # both down: reuse the last good forecast for this kickoff rather
+    # than silently dropping weather
+    return cache.get(key) or {"roof": roof}
+
+
+def _nws_weather(lat, lon, roof, start_et):
+    """Kickoff-hour forecast from api.weather.gov, or None."""
+    from zoneinfo import ZoneInfo
+
+    def get(url):
+        out = subprocess.run(["curl", "-sSg", "--max-time", "25", "-A",
+                              "parlay-board (github.com/pristinepoolspgh/nfl-parlay)",
+                              url], capture_output=True, check=True)
+        return json.loads(out.stdout)
+
+    try:
+        pts = get(f"https://api.weather.gov/points/{lat:.4f},{lon:.4f}")
+        periods = get(pts["properties"]["forecastHourly"])["properties"]["periods"]
+        et = ZoneInfo("America/New_York")
+        want = datetime.strptime(start_et[:13], "%Y-%m-%d %H").replace(tzinfo=et)
+        for p in periods:
+            t = datetime.fromisoformat(p["startTime"]).astimezone(et)
+            if t.replace(minute=0) == want:
+                wind = int(str(p.get("windSpeed", "0")).split()[0].split("-")[-1] or 0)
+                gust = p.get("windGust")
+                return {"roof": roof, "temp": round(p["temperature"]), "wind": wind,
+                        "gust": int(str(gust).split()[0]) if gust else None,
+                        "pop": (p.get("probabilityOfPrecipitation") or {}).get("value") or 0,
+                        "src": "nws"}
+    except Exception:
+        return None
+    return None
 
 
 def _norm_name(n):

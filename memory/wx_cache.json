@@ -33,5 +33,93 @@
 "wind": 11,
 "gust": 28,
 "pop": 1
+},
+"BUF 2026-11-26 20": {
+"roof": "open",
+"temp": 37,
+"wind": 15,
+"gust": null,
+"pop": 98,
+"src": "nws"
+},
+"PIT 2026-11-27 15": {
+"roof": "open",
+"temp": 42,
+"wind": 17,
+"gust": null,
+"pop": 65,
+"src": "nws"
+},
+"JAX 2026-11-29 13": {
+"roof": "open",
+"temp": 65,
+"wind": 7,
+"gust": null,
+"pop": 0,
+"src": "nws"
+},
+"CIN 2026-11-29 13": {
+"roof": "open",
+"temp": 51,
+"wind": 13,
+"gust": null,
+"pop": 97,
+"src": "nws"
+},
+"HOU 2026-11-29 13": {
+"roof": "retract",
+"temp": 68,
+"wind": 15,
+"gust": null,
+"pop": 0,
+"src": "nws"
+},
+"IND 2026-11-29 13": {
+"roof": "retract",
+"temp": 47,
+"wind": 10,
+"gust": null,
+"pop": 98,
+"src": "nws"
+},
+"MIA 2026-11-29 13": {
+"roof": "open",
+"temp": 77,
+"wind": 6,
+"gust": null,
+"pop": 11,
+"src": "nws"
+},
+"ARI 2026-11-29 16": {
+"roof": "retract",
+"temp": 77,
+"wind": 5,
+"gust": null,
+"pop": 0,
+"src": "nws"
+},
+"SF 2026-11-29 16": {
+"roof": "open",
+"temp": 64,
+"wind": 14,
+"gust": null,
+"pop": 73,
+"src": "nws"
+},
+"CLE 2026-11-29 20": {
+"roof": "open",
+"temp": 47,
+"wind": 14,
+"gust": null,
+"pop": 96,
+"src": "nws"
+},
+"TB 2026-11-30 20": {
+"roof": "open",
+"temp": 67,
+"wind": 3,
+"gust": null,
+"pop": 45,
+"src": "nws"
 }
 }
